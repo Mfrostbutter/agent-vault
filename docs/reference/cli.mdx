@@ -1,0 +1,526 @@
+---
+title: "CLI reference"
+description: "Complete reference for all Agent Vault CLI commands."
+---
+
+## Server
+
+<AccordionGroup>
+  <Accordion title="agent-vault server">
+    ```bash
+    agent-vault server [flags]
+    ```
+
+    Start the Agent Vault server. Default port is 14321. On a fresh install, prompts for a master password interactively unless provided via environment variable or stdin.
+
+    Password resolution order: `AGENT_VAULT_MASTER_PASSWORD` env var, then `--password-stdin`, then interactive prompt. The env var is unset from the process immediately after reading.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--host` | `localhost` | Host to bind to |
+    | `--port` | `14321` | Port to listen on |
+    | `-d`, `--detach` | `false` | Run in background (detached) mode |
+    | `--password-stdin` | `false` | Read master password from stdin |
+
+    **Environment variables:**
+
+    | Variable | Description |
+    |----------|-------------|
+    | `AGENT_VAULT_MASTER_PASSWORD` | Master password for encrypting credentials at rest |
+    | `AGENT_VAULT_ADDR` | Externally-reachable base URL (e.g. `https://agent-vault.example.com`). Used for links in emails, invites, and discovery. Falls back to `http://{host}:{port}` if unset. |
+    | `AGENT_VAULT_SMTP_HOST` | SMTP server host. If unset, email notifications are silently disabled. |
+    | `AGENT_VAULT_SMTP_PORT` | SMTP server port (default `587`) |
+    | `AGENT_VAULT_SMTP_USERNAME` | SMTP username |
+    | `AGENT_VAULT_SMTP_PASSWORD` | SMTP password |
+    | `AGENT_VAULT_SMTP_FROM` | Sender address for outgoing emails |
+  </Accordion>
+
+  <Accordion title="agent-vault server stop">
+    ```bash
+    agent-vault server stop
+    ```
+
+    Stop a running server. Reads the PID from `~/.agent-vault/agent-vault.pid` and sends SIGTERM.
+  </Accordion>
+</AccordionGroup>
+
+## Authentication
+
+<AccordionGroup>
+  <Accordion title="agent-vault register">
+    ```bash
+    agent-vault register [flags]
+    ```
+
+    Self-signup for a new account. The first user to register becomes the instance owner, is auto-activated, and is granted admin on the default vault. Subsequent users receive a 6-digit email verification code.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--address` | | Server URL |
+    | `--email` | | Email address |
+    | `--password-stdin` | `false` | Read password from stdin |
+  </Accordion>
+
+  <Accordion title="agent-vault login">
+    ```bash
+    agent-vault login [flags]
+    ```
+
+    Authenticate with email and password. Prompts interactively by default. Rejects inactive (unverified) accounts.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--email` | | Email address |
+    | `--password-stdin` | `false` | Read password from stdin |
+  </Accordion>
+
+  <Accordion title="agent-vault change-password">
+    ```bash
+    agent-vault change-password [flags]
+    ```
+
+    Change your own password. Prompts interactively for current password, new password, and confirmation. Invalidates all existing sessions and issues a new one.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--password-stdin` | `false` | Read current and new passwords as two lines from stdin |
+  </Accordion>
+
+  <Accordion title="agent-vault session">
+    ```bash
+    agent-vault session
+    ```
+
+    Show current session info.
+  </Accordion>
+</AccordionGroup>
+
+## Vaults
+
+<AccordionGroup>
+  <Accordion title="agent-vault vault create">
+    ```bash
+    agent-vault vault create <name>
+    ```
+
+    Create a new vault. Name must be in slug format (lowercase alphanumeric and hyphens).
+  </Accordion>
+
+  <Accordion title="agent-vault vault list">
+    ```bash
+    agent-vault vault list
+    ```
+
+    List vaults the current user has access to.
+  </Accordion>
+
+  <Accordion title="agent-vault vault delete">
+    ```bash
+    agent-vault vault delete <name> [flags]
+    ```
+
+    Delete a vault and all its credentials, policies, and proposals. Requires vault admin or instance owner role. The default vault cannot be deleted.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--yes` | `false` | Skip confirmation prompt |
+  </Accordion>
+</AccordionGroup>
+
+## Vault users
+
+<AccordionGroup>
+  <Accordion title="agent-vault vault user invite">
+    ```bash
+    agent-vault vault user invite <email> [flags]
+    ```
+
+    Invite a user to a vault. Sends an email with an acceptance link if SMTP is configured.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+    | `--role` | `member` | Vault role: `admin` or `member` |
+  </Accordion>
+
+  <Accordion title="agent-vault vault user list">
+    ```bash
+    agent-vault vault user list [flags]
+    ```
+
+    List members of a vault.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+  </Accordion>
+
+  <Accordion title="agent-vault vault user remove">
+    ```bash
+    agent-vault vault user remove <email> [flags]
+    ```
+
+    Remove a user from a vault.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+  </Accordion>
+
+  <Accordion title="agent-vault vault user set-role">
+    ```bash
+    agent-vault vault user set-role <email> [flags]
+    ```
+
+    Change a user's vault-level role.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+    | `--role` | | Vault role: `admin` or `member` (required) |
+  </Accordion>
+</AccordionGroup>
+
+## Policies
+
+<AccordionGroup>
+  <Accordion title="agent-vault policy get">
+    ```bash
+    agent-vault policy get [flags]
+    ```
+
+    Print the current vault policy as YAML.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+  </Accordion>
+
+  <Accordion title="agent-vault policy set">
+    ```bash
+    agent-vault policy set [flags]
+    ```
+
+    Set the vault policy. Without `-f`, launches an interactive builder that prompts for rules, headers, and credentials (requires TTY). With `-f`, replaces the policy from a YAML file.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+    | `-f` | | Path to a YAML policy file |
+  </Accordion>
+
+  <Accordion title="agent-vault policy clear">
+    ```bash
+    agent-vault policy clear [flags]
+    ```
+
+    Remove the vault policy. Prompts for confirmation unless `--yes` is passed.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+    | `--yes` | `false` | Skip confirmation prompt |
+  </Accordion>
+</AccordionGroup>
+
+## Credentials
+
+<AccordionGroup>
+  <Accordion title="agent-vault credentials set">
+    ```bash
+    agent-vault credentials set <KEY=VALUE> [KEY2=VALUE2 ...] [flags]
+    ```
+
+    Store one or more credentials using `KEY=VALUE` format. Alias: `agent-vault creds set`.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+  </Accordion>
+
+  <Accordion title="agent-vault credentials delete">
+    ```bash
+    agent-vault credentials delete <KEY> [flags]
+    ```
+
+    Delete a credential. Alias: `agent-vault creds delete`.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+  </Accordion>
+</AccordionGroup>
+
+## Proposals
+
+<AccordionGroup>
+  <Accordion title="agent-vault proposal list">
+    ```bash
+    agent-vault proposal list [flags]
+    ```
+
+    List proposals for a vault.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+    | `--status` | | Filter by status (e.g. `pending`) |
+  </Accordion>
+
+  <Accordion title="agent-vault proposal show">
+    ```bash
+    agent-vault proposal show <number> [flags]
+    ```
+
+    Show details of a proposal.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+  </Accordion>
+
+  <Accordion title="agent-vault proposal approve">
+    ```bash
+    agent-vault proposal approve <number> [KEY=VALUE ...] [flags]
+    ```
+
+    Approve and apply a proposal. Requires an active login session. Pass credential values as `KEY=VALUE` arguments or the command will prompt for any missing credentials.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+  </Accordion>
+
+  <Accordion title="agent-vault proposal reject">
+    ```bash
+    agent-vault proposal reject <number> [flags]
+    ```
+
+    Reject a pending proposal. Requires an active login session.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+    | `--reason` | | Rejection reason |
+  </Accordion>
+
+  <Accordion title="agent-vault proposal review">
+    ```bash
+    agent-vault proposal review [flags]
+    ```
+
+    Interactively walk through all pending proposals. For each proposal you can approve, reject, skip, or quit. Requires an active login session.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+  </Accordion>
+</AccordionGroup>
+
+## Agent invites
+
+<AccordionGroup>
+  <Accordion title="agent-vault vault agent invite create">
+    ```bash
+    agent-vault vault agent invite create [flags]
+    ```
+
+    Create an agent invite and print the onboarding prompt (copies to clipboard). By default creates a one-time invite. Use `--persistent` for agents that need ongoing access with a long-lived service token.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+    | `--ttl` | `15m` | Invite expiration time |
+    | `--persistent` | `false` | Create a persistent agent invite |
+    | `--name` | | Agent name (persistent invites only) |
+  </Accordion>
+
+  <Accordion title="agent-vault vault agent invite list">
+    ```bash
+    agent-vault vault agent invite list [flags]
+    ```
+
+    List agent invites for a vault.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+    | `--status` | | Filter by status (e.g. `pending`) |
+  </Accordion>
+
+  <Accordion title="agent-vault vault agent invite revoke">
+    ```bash
+    agent-vault vault agent invite revoke <token_suffix> [flags]
+    ```
+
+    Revoke a pending invite by the last 8 or more characters of the token.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+  </Accordion>
+</AccordionGroup>
+
+## Agents
+
+<AccordionGroup>
+  <Accordion title="agent-vault vault agent list">
+    ```bash
+    agent-vault vault agent list [flags]
+    ```
+
+    List registered agents.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+  </Accordion>
+
+  <Accordion title="agent-vault vault agent info">
+    ```bash
+    agent-vault vault agent info <name> [flags]
+    ```
+
+    Show agent details including vault, status, and active sessions.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+  </Accordion>
+
+  <Accordion title="agent-vault vault agent revoke">
+    ```bash
+    agent-vault vault agent revoke <name> [flags]
+    ```
+
+    Revoke an agent. Invalidates its service token and deletes all sessions.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+  </Accordion>
+
+  <Accordion title="agent-vault vault agent rotate">
+    ```bash
+    agent-vault vault agent rotate <name> [flags]
+    ```
+
+    Create a rotation invite to re-issue an agent's service token. The old token is invalidated when the agent redeems the new invite.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+  </Accordion>
+
+  <Accordion title="agent-vault vault agent rename">
+    ```bash
+    agent-vault vault agent rename <name> <new-name> [flags]
+    ```
+
+    Rename an agent.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+  </Accordion>
+</AccordionGroup>
+
+## Owner — users
+
+<AccordionGroup>
+  <Accordion title="agent-vault owner user list">
+    ```bash
+    agent-vault owner user list
+    ```
+
+    List all users on the instance. Owner only.
+  </Accordion>
+
+  <Accordion title="agent-vault owner user info">
+    ```bash
+    agent-vault owner user info [email]
+    ```
+
+    View user info and vault memberships. If no email is provided, shows your own info. Owner can view any user; members can only view themselves.
+  </Accordion>
+
+  <Accordion title="agent-vault owner user remove">
+    ```bash
+    agent-vault owner user remove <email>
+    ```
+
+    Remove a user from the instance. Owner only.
+  </Accordion>
+
+  <Accordion title="agent-vault owner user set-role">
+    ```bash
+    agent-vault owner user set-role <email> [flags]
+    ```
+
+    Change a user's instance-level role. The last owner cannot be demoted. Owner only.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--role` | | Instance role: `owner` or `member` (required) |
+  </Accordion>
+</AccordionGroup>
+
+## Owner — vaults
+
+<AccordionGroup>
+  <Accordion title="agent-vault owner vault list">
+    ```bash
+    agent-vault owner vault list
+    ```
+
+    List all vaults on the instance. Owner only.
+  </Accordion>
+
+  <Accordion title="agent-vault owner vault remove">
+    ```bash
+    agent-vault owner vault remove <name>
+    ```
+
+    Delete a vault. Owner only.
+  </Accordion>
+</AccordionGroup>
+
+## Utilities
+
+<AccordionGroup>
+  <Accordion title="agent-vault vault run">
+    ```bash
+    agent-vault vault run [flags] -- <command>
+    ```
+
+    Wrap a process with Agent Vault environment variables. The child process receives `AGENT_VAULT_ADDR`, `AGENT_VAULT_SESSION_TOKEN`, and `AGENT_VAULT_VAULT` in its environment.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--addr` | | Server address override |
+  </Accordion>
+
+  <Accordion title="agent-vault email test">
+    ```bash
+    agent-vault email test [flags]
+    ```
+
+    Send a test email to verify SMTP configuration. Owner only.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--to` | Owner's email | Recipient email address |
+  </Accordion>
+
+  <Accordion title="agent-vault reset">
+    ```bash
+    agent-vault reset [flags]
+    ```
+
+    Permanently delete all data and reset the instance to a fresh state. Requires a running server for role verification. Auto-stops the server before wiping data. Owner only.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--yes` | `false` | Skip confirmation prompt |
+  </Accordion>
+</AccordionGroup>

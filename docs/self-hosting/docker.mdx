@@ -1,0 +1,117 @@
+---
+title: "Docker"
+description: "Run Agent Vault in a Docker container"
+---
+
+## Quick start
+
+```bash
+docker run -it -p 14321:14321 -v agent-vault-data:/data infisical/agent-vault
+```
+
+The server starts and prompts for a master password interactively. Data is persisted in the `agent-vault-data` volume at `/data/.agent-vault/agent-vault.db`.
+
+Register the owner account (first user gets full admin privileges):
+
+```bash
+agent-vault register --address http://localhost:14321
+```
+
+## Build from source
+
+```bash
+make docker
+```
+
+This runs a multi-stage build:
+
+1. **`node:22-alpine`** -- builds the React/Vite frontend
+2. **`golang:1.25-alpine`** -- compiles the Go binary with the embedded frontend
+3. **`alpine:3.21`** -- minimal runtime image
+
+The final image runs as non-root user `agent-vault` (UID 65532) and includes a built-in health check at `GET /health`.
+
+## Configuration
+
+Pass the master password and optional SMTP config via environment variables to skip interactive prompts:
+
+```bash
+docker run -it -p 14321:14321 \
+  -v agent-vault-data:/data \
+  -e AGENT_VAULT_MASTER_PASSWORD=your-password \
+  -e AGENT_VAULT_SMTP_HOST=smtp.gmail.com \
+  -e AGENT_VAULT_SMTP_PORT=587 \
+  -e AGENT_VAULT_SMTP_USERNAME=you@gmail.com \
+  -e AGENT_VAULT_SMTP_PASSWORD=app-password \
+  -e AGENT_VAULT_SMTP_FROM=you@gmail.com \
+  infisical/agent-vault
+```
+
+<Warning>
+  Never put `AGENT_VAULT_MASTER_PASSWORD` in your Dockerfile or a committed `.env` file. Use Docker secrets or your orchestrator's secret management instead.
+</Warning>
+
+Set `AGENT_VAULT_ADDR` if the server is reachable at a URL different from `http://localhost:14321` (used for generating links in emails, invites, and discovery):
+
+```bash
+docker run -it -p 14321:14321 \
+  -v agent-vault-data:/data \
+  -e AGENT_VAULT_MASTER_PASSWORD=your-password \
+  -e AGENT_VAULT_ADDR=https://agent-vault.example.com \
+  infisical/agent-vault
+```
+
+## Register the owner
+
+After the container starts, register the first user. This account becomes the instance owner with full admin privileges and is auto-granted admin on the default vault.
+
+<CodeGroup>
+```bash CLI
+agent-vault register --address http://localhost:14321
+```
+
+```bash Browser
+# Open http://localhost:14321/register in your browser
+```
+</CodeGroup>
+
+## Docker Compose
+
+```yaml docker-compose.yml
+services:
+  agent-vault:
+    image: infisical/agent-vault
+    ports:
+      - "14321:14321"
+    volumes:
+      - agent-vault-data:/data
+    environment:
+      - AGENT_VAULT_MASTER_PASSWORD=${AGENT_VAULT_MASTER_PASSWORD}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:14321/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  agent-vault-data:
+```
+
+Start it:
+
+```bash
+export AGENT_VAULT_MASTER_PASSWORD=your-password
+docker compose up -d
+```
+
+<Tip>
+  The health check uses `wget` because the minimal Alpine image does not include `curl`. If you swap to a different base image, adjust accordingly.
+</Tip>
+
+## Volume and persistence
+
+All state lives in a single SQLite database at `/data/.agent-vault/agent-vault.db`. The Docker image declares `VOLUME /data`, so data survives container restarts as long as you mount a named volume or host path.
+
+<Warning>
+  Use a consistent master password across container restarts. Changing it makes existing encrypted credentials unreadable.
+</Warning>

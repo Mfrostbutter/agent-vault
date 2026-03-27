@@ -1,0 +1,51 @@
+---
+title: "Introduction"
+description: "A credential broker for AI agents to prevent credential exfiltration."
+---
+
+Agent Vault is an agent-first, open source proxy designed by [Infisical](https://github.com/Infisical/infisical) that sits between agents and the APIs they call.
+
+Agents like [Claude Code](https://code.claude.com/docs/en/overview) or [OpenClaw](https://openclaw.ai) route HTTP requests through an Agent Vault server, which reconstructs each request with the right set of authentication credentials, before forwarding it to the target service.
+
+<Mermaid
+  chart={`
+    flowchart LR
+      A[Agent] -->|HTTP request + session token| B[Agent Vault]
+      B -->|Reconstructed request + real credentials| C[Target API]
+      C -->|Response| B
+      B -->|Response| A
+  `}
+/>
+
+## Why Agent Vault
+
+Traditional credential management solutions return credentials directly to the end users of that solution.
+
+This is not suitable for agents because they are non-deterministic and vulnerable to prompt injection. This implies that an attacker could craft a malicious prompt and exfiltrate credentials from an agent back to the attacker.
+
+Enter Agent Vault - a new credential management solution built for agents that prevents credential exfiltration with ergonomic, agent-first design.
+
+<Note>
+  Agent Vault ships as a single binary. Run `agent-vault server` to start the server, then
+  use the same binary as a CLI client (`agent-vault login`, `agent-vault vault run`, `agent-vault
+  proposal approve`, etc.) pointed at any running server.
+</Note>
+
+## Quickstart
+
+Learn how to secure your agents with Agent Vault.
+
+<CardGroup cols={2}>
+  <Card title="Claude Code" icon="terminal" href="/quickstart/claude-code">
+    Connect Claude Code to Agent Vault.
+  </Card>
+  <Card title="Cursor" icon="arrow-pointer" href="/quickstart/cursor">
+    Connect Cursor to Agent Vault.
+  </Card>
+  <Card title="OpenClaw" icon="paw" href="/quickstart/openclaw">
+    Connect OpenClaw to Agent Vault.
+  </Card>
+  <Card title="NanoClaw" icon="microchip" href="/quickstart/nanoclaw">
+    Connect NanoClaw to Agent Vault.
+  </Card>
+</CardGroup>

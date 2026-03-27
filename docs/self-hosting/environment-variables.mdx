@@ -1,0 +1,79 @@
+---
+title: "Environment variables"
+description: "All environment variables used to configure Agent Vault"
+---
+
+## Server configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AGENT_VAULT_MASTER_PASSWORD` | (unset) | Master key for encrypting credentials at rest (AES-256-GCM / Argon2id). Read at startup, then immediately unset from the process. |
+| `AGENT_VAULT_ADDR` | `http://{host}:{port}` | Externally-reachable base URL. Used for generating links in emails, invites, and discovery responses. |
+
+Master password resolution order:
+
+1. `AGENT_VAULT_MASTER_PASSWORD` environment variable
+2. `--password-stdin` flag
+3. Interactive prompt
+
+<Warning>
+  Never put `AGENT_VAULT_MASTER_PASSWORD` in Dockerfiles, committed `.env` files, or shell history. Use secret management features of your deployment platform (e.g., `fly secrets set`, Docker secrets, or your CI/CD provider's secret store).
+</Warning>
+
+## SMTP configuration
+
+If `AGENT_VAULT_SMTP_HOST` is unset, email notifications are silently disabled. All other SMTP variables are only read when `AGENT_VAULT_SMTP_HOST` is set.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AGENT_VAULT_SMTP_HOST` | (unset) | SMTP server hostname. If unset, email notifications are disabled. |
+| `AGENT_VAULT_SMTP_PORT` | `587` | SMTP port. Use `465` for implicit TLS, `587` for STARTTLS. |
+| `AGENT_VAULT_SMTP_USERNAME` | (unset) | SMTP authentication username. |
+| `AGENT_VAULT_SMTP_PASSWORD` | (unset) | SMTP authentication password. |
+| `AGENT_VAULT_SMTP_FROM` | (unset) | Sender email address. Required if SMTP is enabled. |
+
+SMTP is used for:
+
+- **Registration verification codes** -- 6-digit codes sent to new users (15-minute TTL)
+- **Vault invite emails** -- links sent to users invited to a vault
+- **Test emails** -- `agent-vault email test` sends a verification email to the owner's address
+
+<Tip>
+  To verify SMTP is working, run `agent-vault email test` -- it sends a test email to the owner's address.
+</Tip>
+
+### Example: Gmail SMTP
+
+<CodeGroup>
+```bash Docker
+docker run -it -p 14321:14321 \
+  -v agent-vault-data:/data \
+  -e AGENT_VAULT_MASTER_PASSWORD=your-password \
+  -e AGENT_VAULT_SMTP_HOST=smtp.gmail.com \
+  -e AGENT_VAULT_SMTP_PORT=587 \
+  -e AGENT_VAULT_SMTP_USERNAME=you@gmail.com \
+  -e AGENT_VAULT_SMTP_PASSWORD=your-app-password \
+  -e AGENT_VAULT_SMTP_FROM=you@gmail.com \
+  infisical/agent-vault
+```
+
+```bash Fly.io
+fly secrets set AGENT_VAULT_SMTP_HOST=smtp.gmail.com
+fly secrets set AGENT_VAULT_SMTP_PORT=587
+fly secrets set AGENT_VAULT_SMTP_USERNAME=you@gmail.com
+fly secrets set AGENT_VAULT_SMTP_PASSWORD=your-app-password
+fly secrets set AGENT_VAULT_SMTP_FROM=you@gmail.com
+```
+</CodeGroup>
+
+## Agent runtime variables
+
+These variables are set automatically by `agent-vault vault run` on the agent's environment. You do not need to set them manually.
+
+| Variable | Description |
+|----------|-------------|
+| `AGENT_VAULT_ADDR` | Server base URL (e.g., `http://127.0.0.1:14321`) |
+| `AGENT_VAULT_SESSION_TOKEN` | Bearer token for authenticating with the proxy, scoped to the vault |
+| `AGENT_VAULT_VAULT` | Name of the vault the session is scoped to |
+
+Agents use these to discover available services (`GET {AGENT_VAULT_ADDR}/discover`) and route authenticated requests through the proxy (`{AGENT_VAULT_ADDR}/proxy/{host}/{path}`).

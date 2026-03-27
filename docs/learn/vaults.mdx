@@ -1,0 +1,143 @@
+---
+title: "Vaults"
+description: "Create vaults and manage team access with invites and roles."
+---
+
+A `Vault` is a secure logical container for credentials with policies for how agents can proxy requests through it.
+
+Each vault contains:
+
+- **[Credentials](/learn/credentials)**: API keys, database credentials, and other sensitive material that cannot be extracted from the vault.
+- **[Policies](/learn/policies)**: Rules for which hosts (e.g. `api.stripe.com`) can be accessed through the vault along with which and how credential(s) must be attached onto each proxy request.
+- **Members**: Users and agents that can access the vault under specific [roles](/learn/permissions#vault-roles) (`admin`, `member`, `consumer`).
+- **[Proposals](/learn/proposals)**: Requests from agents to set credential(s) and/or add host rule(s) that use those credentials.
+
+<Tip>
+  Note that a **default** vault is created automatically for the first user of
+  Agent Vault (called the instance [`owner`](/learn/permissions#instance-roles)).
+</Tip>
+
+## Create a vault
+
+```bash
+agent-vault vault create my-vault
+agent-vault vault list
+```
+
+Vault names must be **unique** across the Agent Vault instance and use **slug format**: lowercase letters, numbers, and hyphens only.
+
+## Invite agents to a vault
+
+<Tabs>
+  <Tab title="One-time invite">
+    For temporary agent sessions you can paste a prompt into (cloud-hosted, chat-based, or on another machine).
+
+    <Steps>
+      <Step title="Create the invite">
+        ```bash
+        agent-vault vault agent invite create --vault my-vault
+        ```
+        Outputs a prompt with the invite URL and usage instructions. Copied to your clipboard
+        automatically. Default TTL: 15 minutes.
+      </Step>
+      <Step title="Paste into the agent's chat">
+        The agent redeems the invite automatically. Single-use — the token is burned
+        on redemption.
+      </Step>
+    </Steps>
+
+  </Tab>
+  <Tab title="Persistent invite">
+    For CI/CD pipelines, always-on assistants, or agents like OpenClaw that need to survive restarts.
+
+    ```bash
+    agent-vault vault agent invite create --persistent --name my-agent --vault my-vault
+    ```
+
+    The agent receives a long-lived **service token** that it uses to mint short-lived session tokens as needed.
+
+  </Tab>
+</Tabs>
+
+## Invite users to a vault
+
+<Steps>
+  <Step title="Send the invite">
+    ```bash
+    agent-vault vault user invite alice@example.com --vault my-vault --role admin
+    ```
+
+    If SMTP is configured, the invitee receives an HTML email with a browser
+    acceptance link. The invite link is also printed to CLI output.
+
+  </Step>
+  <Step title="Invitee accepts">
+    The invitee clicks the link and lands on a browser acceptance page.
+
+    - **New users** set their password on acceptance and their account is created
+      automatically.
+    - **Existing users** get the vault grant applied immediately.
+
+  </Step>
+  <Step title="Verify membership">
+    ```bash
+    agent-vault vault user list --vault my-vault
+    ```
+  </Step>
+</Steps>
+
+## Manage members and agents
+
+```bash
+# List vault members
+agent-vault vault user list --vault my-vault
+
+# Remove a member
+agent-vault vault user remove alice@example.com --vault my-vault
+
+# Change vault role
+agent-vault vault user set-role alice@example.com --role member --vault my-vault
+
+# List agents in a vault
+agent-vault vault agent list --vault my-vault
+
+# View agent details
+agent-vault vault agent info my-agent
+
+# Rotate an agent's service token
+agent-vault vault agent rotate my-agent
+
+# Rename an agent
+agent-vault vault agent rename my-agent new-name
+
+# Revoke an agent (immediate, permanent)
+agent-vault vault agent revoke my-agent
+```
+
+## Delete a vault
+
+[Vault admins](/learn/permissions#vault-roles) can delete the vaults they manage. Instance [owners](/learn/permissions#instance-roles) can also delete any vault.
+
+```bash
+agent-vault vault delete my-vault
+```
+
+The default vault cannot be deleted. Use `--yes` to skip the confirmation prompt.
+
+<Warning>
+  Deleting a vault permanently removes all its [policies](/learn/policies),
+  [credentials](/learn/credentials), agents, and [proposals](/learn/proposals).
+  This cannot be undone.
+</Warning>
+
+## Owner-level vault management
+
+Instance [owners](/learn/permissions#instance-roles) can manage all vaults across the instance, regardless of vault membership.
+
+```bash
+# List ALL vaults (owner only)
+agent-vault owner vault list
+
+# Delete a vault (owner only)
+agent-vault owner vault remove my-vault
+```

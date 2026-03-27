@@ -1,0 +1,16 @@
+vault: default
+
+rules:
+  - host: "*.github.com"
+    description: "GitHub API"
+    headers:
+      Authorization: "Bearer {{ GITHUB_TOKEN }}"
+
+  - host: api.openai.com
+    description: "OpenAI API"
+    headers:
+      Authorization: "Bearer {{ OPENAI_API_KEY }}"
+
+  - host: api.example.com
+    headers:
+      X-API-Key: "{{ EXAMPLE_API_KEY }}"

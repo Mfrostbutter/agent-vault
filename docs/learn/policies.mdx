@@ -1,0 +1,254 @@
+---
+title: "Policies"
+description: "Define which services your agents can access and how credentials are attached."
+---
+
+A `Policy` is a per-[vault](/learn/vaults) set of rules that defines which hosts [agents](/agents/overview) can reach through the proxy and how Agent Vault authenticates to each one. When an agent makes a proxied request, Agent Vault matches the target host against the policy, attaches the configured [credentials](/learn/credentials), and forwards the request. If no rule matches, Agent Vault returns `403`.
+
+Each policy rule contains:
+
+- **Host**: The target hostname. Supports exact match (e.g. `api.stripe.com`) or wildcard patterns (e.g. `*.github.com`).
+- **Auth config**: How Agent Vault authenticates to the host. Four types are supported: `bearer`, `basic`, `api-key`, and `custom`.
+- **Description**: An optional human-readable label shown in `/discover` responses.
+
+<Tip>
+  The `/discover` endpoint returns the list of hosts and descriptions from the
+  vault's policy. Agents use this to know which services are already available
+  before raising a [proposal](/learn/proposals).
+</Tip>
+
+Similar to [credentials](/learn/credentials), a policy can be configured in two ways:
+
+- **Automatically**: As agents do their work, they can raise [proposals](/learn/proposals) to add or modify policy rules. You review each proposal, provide any required [credentials](/learn/credentials), and approve. This is the recommended workflow for working with Agent Vault.
+- **Manually**: You can set the policy directly via the CLI by applying a YAML file or by using the interactive builder. This can be useful for pre-configuring a vault before inviting agents.
+
+## Policy structure
+
+A policy is a YAML file with a list of rules. Here's what a single rule looks like:
+
+```yaml stripe-policy.yaml
+rules:
+  - host: api.stripe.com
+    description: Stripe API
+    auth:
+      type: bearer
+      token: STRIPE_KEY
+```
+
+```bash
+agent-vault policy set -f stripe-policy.yaml --vault my-vault
+```
+
+The `host` tells Agent Vault which requests this rule applies to. The `auth` block tells Agent Vault how to authenticate, referencing [credential](/learn/credentials) keys by name (not the actual credential values). The following section covers all four auth types.
+
+## Auth types
+
+Every rule must include an `auth` config that tells Agent Vault how to authenticate to the target host. The `auth` config references [credential](/learn/credentials) key names (not the actual credential values) stored in the vault.
+
+### Bearer
+
+Attaches an `Authorization: Bearer <token>` header. The `token` field references a credential key.
+
+```yaml
+rules:
+  - host: api.stripe.com
+    description: Stripe API
+    auth:
+      type: bearer
+      token: STRIPE_KEY
+```
+
+Common services: Stripe, GitHub, OpenAI.
+
+### Basic
+
+Attaches an `Authorization: Basic <base64>` header using HTTP Basic authentication. The `username` field is required; `password` is optional (defaults to empty).
+
+```yaml
+rules:
+  - host: api.ashbyhq.com
+    description: Ashby ATS API
+    auth:
+      type: basic
+      username: ASHBY_API_KEY
+```
+
+With a password:
+
+```yaml
+rules:
+  - host: yoursite.atlassian.net
+    description: Jira API
+    auth:
+      type: basic
+      username: JIRA_EMAIL
+      password: JIRA_API_TOKEN
+```
+
+### API key
+
+Attaches a credential value to a named header with an optional prefix. The `header` field defaults to `Authorization` if omitted.
+
+```yaml
+rules:
+  - host: api.anthropic.com
+    description: Anthropic API
+    auth:
+      type: api-key
+      key: ANTHROPIC_KEY
+      header: x-api-key
+```
+
+With a prefix:
+
+```yaml
+rules:
+  - host: api.example.com
+    auth:
+      type: api-key
+      key: EXAMPLE_KEY
+      header: Authorization
+      prefix: "ApiKey "
+```
+
+### Custom
+
+Freeform header templates with `{{ SECRET }}` placeholders. Each placeholder is resolved to the corresponding credential at proxy time. Use this when none of the typed auth methods fit.
+
+```yaml
+rules:
+  - host: api.acme.internal
+    description: Internal ACME service
+    auth:
+      type: custom
+      headers:
+        X-API-Key: "{{ ACME_API_KEY }}"
+        X-Tenant-ID: "{{ ACME_TENANT }}"
+```
+
+<Warning>
+  Every credential key referenced in an auth config (whether directly or via `
+  {{ KEY }}` templates) must resolve to either an existing
+  [credential](/learn/credentials) in the vault or a credential slot in the same
+  [proposal](/learn/proposals). Agent Vault returns `400` if a key is missing.
+</Warning>
+
+## Host matching
+
+Agent Vault supports two host matching modes:
+
+- **Exact match**: `api.stripe.com` matches only `api.stripe.com`.
+- **Wildcard**: `*.github.com` matches `api.github.com`, `uploads.github.com`, etc. The `*` replaces exactly one subdomain segment.
+
+## Example
+
+A policy can define access to multiple services with different auth types:
+
+```yaml policy.yaml
+rules:
+  - host: api.stripe.com
+    description: Stripe API
+    auth:
+      type: bearer
+      token: STRIPE_KEY
+
+  - host: "*.github.com"
+    description: GitHub API
+    auth:
+      type: bearer
+      token: GITHUB_TOKEN
+
+  - host: api.anthropic.com
+    description: Anthropic API
+    auth:
+      type: api-key
+      key: ANTHROPIC_KEY
+      header: x-api-key
+
+  - host: yoursite.atlassian.net
+    description: Jira API
+    auth:
+      type: basic
+      username: JIRA_EMAIL
+      password: JIRA_API_TOKEN
+```
+
+```bash
+agent-vault policy set -f policy.yaml --vault my-vault
+```
+
+Any [agent](/agents/overview) scoped to the [vault](/learn/vaults) named `my-vault` can now proxy requests to these hosts, and Agent Vault attaches the real [credentials](/learn/credentials) at request time.
+
+## Managing policies
+
+### Set from a file
+
+```bash
+agent-vault policy set -f policy.yaml --vault my-vault
+```
+
+Replaces the entire policy with the contents of the file. This is idempotent, running it twice with the same file produces the same result.
+
+### Set interactively
+
+```bash
+agent-vault policy set --vault my-vault
+```
+
+Walks you through adding rules, auth configs, and credential references one at a time. Requires a TTY (won't work in scripts).
+
+### View the current policy
+
+```bash
+agent-vault policy get --vault my-vault
+```
+
+Prints the active policy as YAML. If no policy is set, the output is empty.
+
+### Clear the policy
+
+```bash
+agent-vault policy clear --vault my-vault
+```
+
+Removes all rules. Agents scoped to this [vault](/learn/vaults) will get `403` on every proxy request until a new policy is set. Prompts for confirmation unless you pass `--yes`.
+
+<Tip>
+  The `--vault` flag defaults to `default` on all policy commands. You only need
+  to specify it when working with additional vaults.
+</Tip>
+
+<AccordionGroup>
+  <Accordion title="How proposals modify policies">
+    Agents don't edit policy files directly. Instead, they propose changes
+    through [proposals](/learn/proposals), bundles of rule and [credential](/learn/credentials)
+    modifications that a human reviews and approves.
+
+    Each rule in a proposal has an `action` field:
+
+    - **`set`**: Idempotent upsert. Adds the rule if the host doesn't exist, or
+      replaces the existing rule for that host. Requires `host` and `auth`.
+    - **`delete`**: Removes the rule matching the given host. Only requires
+      `host`.
+
+    When you approve a proposal, Agent Vault atomically merges all rule changes into
+    the vault's policy in a single transaction. Set rules are upserted by host,
+    delete rules remove matching entries.
+
+    This means agents can request access to new services without you manually
+    editing YAML files. You just review and click "Allow" in the browser
+    approval page.
+
+  </Accordion>
+
+  <Accordion title="What happens when an agent hits an unknown host">
+    When a proxy request targets a host not in the policy, Agent Vault returns `403`
+    with a `proposal_hint` in the response body. The hint includes the denied
+    host and the endpoint to create a proposal.
+
+    Well-behaved agents use this hint to automatically raise a
+    [proposal](/learn/proposals) requesting access. You receive a browser link
+    to review the request and provide any needed [credentials](/learn/credentials).
+
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,90 @@
+---
+title: "Agents"
+description: "Understand the two types of agents in Agent Vault and how to connect them."
+---
+
+An `Agent` is any AI-powered process that connects to a [vault](/learn/vaults) to proxy requests and raise [proposals](/learn/proposals) through Agent Vault. Agent Vault recognizes two types of agents: **temporary** and **persistent**.
+
+## Temporary agents
+
+A temporary agent is an ephemeral session with no stored identity. It connects to a vault, does its work, and the session expires. There is nothing to manage afterward.
+
+### `agent-vault vault run` (recommended for local dev)
+
+Wraps a local agent process with the environment variables it needs. No invite, no token management.
+
+```bash
+agent-vault vault run -- claude
+agent-vault vault run --vault my-vault -- cursor
+```
+
+The agent can immediately make proxied requests and raise proposals.
+
+### One-time invite
+
+For agents you can paste a prompt into, like Devin or other cloud-hosted agents.
+
+```bash
+agent-vault vault agent invite create --vault my-vault
+```
+
+Outputs a prompt with the invite URL. Paste it into the agent's chat. The token is burned on redemption and the agent receives a single session token.
+
+## Persistent agents
+
+A persistent agent has a named identity that outlives any single session. It receives a long-lived **service token** on creation and uses it to mint short-lived **session tokens** as needed, without human intervention. Best for CI/CD pipelines, always-on assistants, or agents that need to survive restarts.
+
+```bash
+agent-vault vault agent invite create --persistent --name my-agent --vault my-vault
+```
+
+Paste the output into the agent's chat. The agent redeems the invite and receives a service token plus an initial session token. When the session expires (24h), the agent mints a new one using the service token (see [Agent protocol](/agents/protocol#session-token)).
+
+<Note>
+Agent names must be 3-64 characters, lowercase alphanumeric and hyphens only, and globally unique across all vaults.
+</Note>
+
+### Managing persistent agents
+
+```bash
+# List agents
+agent-vault vault agent list --vault my-vault
+
+# View agent details (vault, status, active sessions)
+agent-vault vault agent info my-agent
+
+# Revoke an agent (invalidates service token, deletes all sessions)
+agent-vault vault agent revoke my-agent
+
+# Rename an agent (keeps the same service token and vault access)
+agent-vault vault agent rename my-agent new-name
+```
+
+### Rotating a service token
+
+```bash
+agent-vault vault agent rotate my-agent
+```
+
+This creates a rotation invite. Paste the prompt into the agent's chat. The agent redeems it and receives a new service token. The old token stays valid until the rotation invite is redeemed, so there is no downtime.
+
+## Choosing the right type
+
+| Scenario | Type | Why |
+|---|---|---|
+| Local dev with Claude Code or Cursor | Temporary (`agent-vault vault run`) | Simplest setup, no tokens to manage |
+| Paste into a cloud agent for a task | Temporary (one-time invite) | Session expires when the task is done |
+| CI/CD pipeline on every push | Persistent | Reconnects without human intervention |
+| Always-on assistant (e.g. OpenClaw) | Persistent | Survives process restarts |
+
+<Tip>
+When in doubt, start with a temporary agent. You can always upgrade to persistent later.
+</Tip>
+
+## What happens after connecting
+
+Regardless of type, every agent follows the same [protocol](/agents/protocol) once connected:
+
+1. Call `/discover` to learn which services are available
+2. Route requests through the proxy at `/proxy/{host}/{path}`
+3. Raise [proposals](/learn/proposals) when access to a new service is needed

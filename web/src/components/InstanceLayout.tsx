@@ -1,0 +1,129 @@
+import { type ReactNode, useRef, useState } from "react";
+import { Link, Outlet, useLocation, useNavigate, useRouteContext } from "@tanstack/react-router";
+import type { AuthContext } from "../router";
+import Navbar from "./Navbar";
+
+type InstanceTab = "users" | "vaults" | "agents";
+
+interface NavItem {
+  id: InstanceTab;
+  label: string;
+  icon: ReactNode;
+}
+
+export default function InstanceLayout() {
+  const { auth } = useRouteContext({ from: "/_auth" }) as { auth: AuthContext };
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isExiting, setIsExiting] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
+
+  const pathSegments = location.pathname.split("/");
+  const lastSegment = pathSegments[pathSegments.length - 1] as InstanceTab;
+  const activeTab: InstanceTab = ["users", "vaults", "agents"].includes(lastSegment)
+    ? lastSegment
+    : "users";
+
+  const navItems: NavItem[] = [
+    {
+      id: "users",
+      label: "Users",
+      icon: (
+        <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      ),
+    },
+    {
+      id: "agents",
+      label: "Agents",
+      icon: (
+        <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="4" y="4" width="16" height="16" rx="2" ry="2" />
+          <rect x="9" y="9" width="6" height="6" />
+          <line x1="9" y1="1" x2="9" y2="4" />
+          <line x1="15" y1="1" x2="15" y2="4" />
+          <line x1="9" y1="20" x2="9" y2="23" />
+          <line x1="15" y1="20" x2="15" y2="23" />
+          <line x1="20" y1="9" x2="23" y2="9" />
+          <line x1="20" y1="14" x2="23" y2="14" />
+          <line x1="1" y1="9" x2="4" y2="9" />
+          <line x1="1" y1="14" x2="4" y2="14" />
+        </svg>
+      ),
+    },
+    {
+      id: "vaults",
+      label: "Vaults",
+      icon: (
+        <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <rect x="7" y="7" width="3" height="9" />
+          <rect x="14" y="7" width="3" height="9" />
+        </svg>
+      ),
+    },
+  ];
+
+  return (
+    <div className="min-h-screen w-full flex flex-col bg-bg">
+      <Navbar email={auth.email} isOwner={auth.is_owner} />
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <aside
+          ref={sidebarRef}
+          className={`w-[220px] flex-shrink-0 border-r border-border bg-surface flex flex-col ${isExiting ? "animate-sidebar-out" : "animate-sidebar-in"}`}
+        >
+          <div className="px-4 pt-5 pb-3">
+            <a
+              href="/vaults"
+              onClick={(e) => {
+                e.preventDefault();
+                if (isExiting) return;
+                setIsExiting(true);
+                const aside = sidebarRef.current;
+                if (aside) {
+                  aside.addEventListener("animationend", () => navigate({ to: "/vaults" }), { once: true });
+                } else {
+                  navigate({ to: "/vaults" });
+                }
+              }}
+              className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              All vaults
+            </a>
+          </div>
+
+          <nav className="flex-1 px-3 pb-4">
+            <ul className="space-y-0.5">
+              {navItems.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    to={`/manage/${item.id}`}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors no-underline ${
+                      activeTab === item.id
+                        ? "bg-bg/50 text-text font-semibold"
+                        : "text-text-muted hover:bg-bg/50 hover:text-text"
+                    }`}
+                  >
+                    <span className={activeTab === item.id ? "text-text" : "text-text-dim"}>{item.icon}</span>
+                    <span className="flex-1 text-left">{item.label}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </aside>
+
+        {/* Content */}
+        <main className="flex-1 min-w-0 flex justify-center">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+}

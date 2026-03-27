@@ -1,0 +1,23 @@
+{
+  "name": "agent-vault-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "^1.168.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.4.1",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.2"
+  }
+}

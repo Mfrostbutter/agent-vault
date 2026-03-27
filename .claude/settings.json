@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -ri \"api.?key\\\\|password\\\\|secret\\\\|token\\\\|bearer\" /Users/tuandang/Desktop/Projects/agent-vault --include=*.go --include=*.js --include=*.ts --include=*.tsx --exclude-dir=node_modules --exclude-dir=.git)",
+      "Bash(grep -r \"FIXME\\\\|TODO\\\\|HACK\\\\|XXX\" /Users/tuandang/Desktop/Projects/agent-vault --include=*.go --include=*.ts --include=*.tsx --include=*.md --include=*.yml --include=*.yaml)",
+      "Bash(grep -r \"http://\\\\|https://\" /Users/tuandang/Desktop/Projects/agent-vault/web/src --include=*.ts --include=*.tsx)"
+    ]
+  },
+  "enabledPlugins": {
+    "feature-dev@claude-plugins-official": true,
+    "mintlify@claude-plugins-official": true
+  }
+}

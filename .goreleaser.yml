@@ -1,0 +1,103 @@
+version: 2
+
+before:
+  hooks:
+    # Build the frontend so it's embedded in the Go binary.
+    - cmd: make web
+
+builds:
+  - id: agent-vault
+    binary: agent-vault
+    main: .
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/Infisical/agent-vault/cmd.version={{.Version}}
+      - -X github.com/Infisical/agent-vault/cmd.commit={{.ShortCommit}}
+      - -X github.com/Infisical/agent-vault/cmd.date={{.Date}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: "agent-vault_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE*
+      - README*
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+sboms:
+  - artifacts: archive
+
+signs:
+  - cmd: cosign
+    artifacts: checksum
+    output: true
+    args:
+      - "sign-blob"
+      - "--yes"
+      - "--output-signature=${signature}"
+      - "${artifact}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+
+brews:
+  - repository:
+      owner: Infisical
+      name: homebrew-get-cli
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/Infisical/agent-vault"
+    description: "Open-source credential broker for AI agents"
+    license: "MIT"
+    install: |
+      bin.install "agent-vault"
+    test: |
+      system "#{bin}/agent-vault", "version"
+
+release:
+  github:
+    owner: Infisical
+    name: agent-vault
+  draft: false
+  prerelease: auto
+  make_latest: true
+  footer: |
+    ## Verify
+
+    ```bash
+    # Verify checksum
+    sha256sum --check checksums.txt
+
+    # Verify signature (requires cosign)
+    cosign verify-blob \
+      --signature checksums.txt.sig \
+      --certificate-identity-regexp "github.com/Infisical/agent-vault" \
+      --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+      checksums.txt
+    ```

@@ -1,0 +1,99 @@
+---
+title: "Fly.io"
+description: "Deploy Agent Vault to Fly.io with persistent storage"
+---
+
+## Deploy
+
+<Steps>
+  <Step title="Install the Fly CLI and authenticate">
+    ```bash
+    curl -L https://fly.io/install.sh | sh
+    fly auth login
+    ```
+  </Step>
+
+  <Step title="Clone the repo and launch">
+    ```bash
+    git clone https://github.com/infisical/agent-vault.git
+    cd agent-vault
+    fly launch
+    ```
+
+    The included `fly.toml` configures port 14321, HTTPS, and health checks automatically.
+  </Step>
+
+  <Step title="Create a persistent volume">
+    ```bash
+    fly volumes create agent_vault_data --size 1 --region sjc
+    ```
+
+    The volume mounts at `/data` and stores the SQLite database at `/data/.agent-vault/agent-vault.db`.
+  </Step>
+
+  <Step title="Set secrets">
+    ```bash
+    fly secrets set AGENT_VAULT_MASTER_PASSWORD=your-password
+    fly secrets set AGENT_VAULT_ADDR=https://your-app.fly.dev
+    ```
+
+    `AGENT_VAULT_ADDR` is the externally-reachable URL used for generating links in emails, invites, and discovery responses.
+  </Step>
+
+  <Step title="Deploy">
+    <CodeGroup>
+    ```bash Make
+    make deploy
+    ```
+
+    ```bash Fly CLI
+    fly deploy
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Register the owner">
+    ```bash
+    agent-vault register --address https://your-app.fly.dev
+    ```
+
+    The first user to register becomes the instance owner with full admin privileges, auto-granted admin on the default vault.
+  </Step>
+
+  <Step title="Verify">
+    ```bash
+    fly status
+    curl https://your-app.fly.dev/health
+    ```
+  </Step>
+</Steps>
+
+## Key details
+
+- **Config**: `fly.toml` sets port 14321, forces HTTPS, and enables auto-stop/auto-start machines
+- **Entrypoint**: `scripts/docker-entrypoint.sh` forwards arguments to the `agent-vault` binary, which natively reads `AGENT_VAULT_MASTER_PASSWORD` from the environment
+- **Storage**: Persistent volume `agent_vault_data` mounted at `/data` -- all state is in a single SQLite file
+
+<Warning>
+  Use a consistent master password across deploys. Changing it makes existing encrypted credentials unreadable. If you need to rotate, export your data first.
+</Warning>
+
+## SMTP for email notifications
+
+To enable registration verification codes, vault invite emails, and other notifications:
+
+```bash
+fly secrets set AGENT_VAULT_SMTP_HOST=smtp.gmail.com
+fly secrets set AGENT_VAULT_SMTP_PORT=587
+fly secrets set AGENT_VAULT_SMTP_USERNAME=you@gmail.com
+fly secrets set AGENT_VAULT_SMTP_PASSWORD=app-password
+fly secrets set AGENT_VAULT_SMTP_FROM=you@gmail.com
+```
+
+<Tip>
+  To verify SMTP is working, run `agent-vault email test` -- it sends a test email to the owner's address.
+</Tip>
+
+<Tip>
+  Use `make deploy` as a shortcut for `fly deploy`.
+</Tip>

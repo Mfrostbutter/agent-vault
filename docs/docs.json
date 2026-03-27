@@ -1,0 +1,73 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Agent Vault",
+  "colors": {
+    "primary": "#3B82F6"
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Getting Started",
+        "pages": [
+          "index",
+          "installation",
+          "how-it-works"
+        ]
+      },
+      {
+        "group": "Quickstart",
+        "pages": [
+          "quickstart/claude-code",
+          "quickstart/cursor",
+          "quickstart/openclaw",
+          "quickstart/nanoclaw"
+        ]
+      },
+      {
+        "group": "Self-Hosting",
+        "pages": [
+          "self-hosting/local",
+          "self-hosting/docker",
+          "self-hosting/fly-io",
+          "self-hosting/environment-variables"
+        ]
+      },
+      {
+        "group": "Learn",
+        "pages": [
+          "learn/vaults",
+          "learn/credentials",
+          "learn/policies",
+          "learn/proposals",
+          "learn/permissions",
+          {
+            "group": "Agents",
+            "pages": [
+              "agents/overview",
+              "agents/protocol"
+            ]
+          },
+          "learn/security"
+        ]
+      },
+      {
+        "group": "Resources",
+        "pages": ["reference/cli"]
+      }
+    ]
+  },
+  "redirects": [
+    { "source": "/quickstart", "destination": "/quickstart/claude-code" },
+    { "source": "/quickstart/coding-agents", "destination": "/quickstart/claude-code" },
+    { "source": "/quickstart/long-lived-agents", "destination": "/quickstart/claude-code" },
+    { "source": "/deployment/docker", "destination": "/self-hosting/docker" },
+    { "source": "/deployment/fly-io", "destination": "/self-hosting/fly-io" },
+    { "source": "/deployment/environment-variables", "destination": "/self-hosting/environment-variables" },
+    { "source": "/configuration/environment-variables", "destination": "/self-hosting/environment-variables" },
+    { "source": "/team/users-and-roles", "destination": "/learn/permissions" },
+    { "source": "/configuration/secrets", "destination": "/learn/credentials" },
+    { "source": "/configuration/policies", "destination": "/learn/policies" },
+    { "source": "/agents/persistent-agents", "destination": "/agents/overview" }
+  ]
+}

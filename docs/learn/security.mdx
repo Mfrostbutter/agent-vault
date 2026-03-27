@@ -1,0 +1,144 @@
+---
+title: "Security"
+description: "How Agent Vault protects credentials at rest, in transit, and across the network."
+---
+
+Agent Vault is designed around a single principle: **agents never see credentials**. Credentials are encrypted at rest, decrypted only in memory at proxy time, and injected into outbound requests server-side. No credential value is ever returned in an API response or written to a log.
+
+This page covers the cryptographic primitives, token model, network protections, and operational safeguards that make this possible.
+
+## Encryption at rest
+
+All [credentials](/learn/credentials) stored in a [vault](/learn/vaults) are encrypted using **AES-256-GCM**, an authenticated encryption scheme that provides both confidentiality and tamper detection.
+
+The encryption key is derived from the **master password** you set at server startup using **Argon2id**, a memory-hard key derivation function resistant to GPU and ASIC attacks.
+
+| Parameter | Value |
+| --------- | ----- |
+| Algorithm | AES-256-GCM |
+| KDF | Argon2id |
+| Time cost | 3 iterations |
+| Memory cost | 64 MiB |
+| Parallelism | 4 threads |
+| Key length | 256 bits |
+| Salt length | 128 bits (random per setup) |
+
+Each encryption operation uses a fresh random nonce generated from `crypto/rand`. Credential values are decrypted in memory only at proxy time to resolve auth headers, then discarded.
+
+<Note>
+  The master password is **never stored on disk**. If set via the
+  `AGENT_VAULT_MASTER_PASSWORD` environment variable, Agent Vault unsets it from the process
+  immediately after reading. A sentinel value (encrypted at setup) is used to
+  verify the password on subsequent startups without storing it.
+</Note>
+
+## Password hashing
+
+User passwords are hashed with **Argon2id** using the same parameters as master key derivation. Each user gets an independent random salt. Password verification uses constant-time comparison (`crypto/subtle.ConstantTimeCompare`) to prevent timing attacks.
+
+KDF parameters are stored per user, so Agent Vault can upgrade hashing parameters in the future without invalidating existing accounts.
+
+Changing a password (`agent-vault account change-password` or `POST /v1/auth/change-password`) invalidates all existing sessions and issues a fresh token.
+
+## Token model
+
+All tokens are generated from `crypto/rand` (256 bits of entropy) and hashed before storage. The raw token is returned to the caller exactly once; Agent Vault only stores the hash.
+
+| Token | Prefix | Storage hash | TTL | Notes |
+| ----- | ------ | ------------ | --- | ----- |
+| Session | `av_sess_` | SHA-256 | 24 hours | Scoped to a vault or user-global |
+| Invite | `av_inv_` | SHA-256 | 15 minutes | Single-use, burned on redemption |
+| Approval | `av_appr_` | SHA-256 | 24 hours | Grants read-only access to a [proposal](/learn/proposals) |
+| Vault invite | `av_uinv_` | SHA-256 | 48 hours | For onboarding human users |
+| Agent service | `av_agent_` | Argon2id | No expiry | Long-lived, revocable; looked up by prefix |
+
+Agent service tokens use Argon2id (the same KDF as passwords) instead of SHA-256 because they are long-lived and high-value. All other tokens are short-lived and use SHA-256 for fast lookup.
+
+## Network security
+
+Agent Vault includes a network guard that validates every outbound proxy connection at the IP level, preventing agents from using the proxy to reach internal infrastructure.
+
+### Modes
+
+| Mode | Behavior |
+| ---- | -------- |
+| `public` (default) | Blocks private/reserved IP ranges and cloud metadata endpoints |
+| `private` | Blocks only cloud metadata endpoints (for local/trusted networks) |
+
+Set via `AGENT_VAULT_NETWORK_MODE=private` for local deployments.
+
+### Always blocked
+
+Cloud provider metadata endpoints are blocked in both modes to prevent credential theft via SSRF:
+
+- `169.254.169.254/32` (AWS, GCP, Azure instance metadata)
+- `fd00:ec2::254/128` (AWS IMDSv2 IPv6)
+
+### Blocked in public mode
+
+RFC-1918 and other reserved ranges are additionally blocked in public mode:
+
+- `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` (private)
+- `127.0.0.0/8`, `::1/128` (loopback)
+- `169.254.0.0/16`, `fe80::/10` (link-local)
+- `fc00::/7` (IPv6 unique local)
+- `100.64.0.0/10` (carrier-grade NAT)
+- `0.0.0.0/32`
+
+### DNS rebinding protection
+
+Agent Vault resolves hostnames to IP addresses, validates every resolved IP against the block list, then connects directly to the validated IP. This prevents DNS rebinding attacks where a hostname resolves to a safe IP during validation but a different (internal) IP during connection.
+
+## Transport security
+
+All proxied requests are forwarded over **HTTPS**, regardless of how the agent connects to Agent Vault locally. The agent's `Authorization` header (containing its Agent Vault session token) is stripped before forwarding; real credentials are injected server-side based on the vault's [policy](/learn/policies).
+
+This means:
+- Agents authenticate to Agent Vault with a session token that grants no direct access to credentials.
+- The session token never reaches the target service.
+- Credential values only exist in the outbound request headers, never in the agent's address space.
+
+## Access control
+
+Agent Vault enforces access at two independent layers. For full details, see [Permissions](/learn/permissions).
+
+- **Instance roles** (`owner`, `member`) control who can manage users, vaults, and server settings. Owners do not get implicit vault access.
+- **Vault roles** (`admin`, `member`) control who can approve [proposals](/learn/proposals), manage agents, and use the proxy within a specific [vault](/learn/vaults).
+- **Agents** are scoped to a single vault and cannot access other vaults or perform instance-level operations.
+- **Proposal approval** requires a valid user session. Read-only approval tokens let you view the proposal, but submitting an approval (providing credentials, clicking "Allow") requires logging in.
+
+## Rate limits
+
+Built-in limits prevent abuse and resource exhaustion:
+
+| Resource | Limit |
+| -------- | ----- |
+| Pending [proposals](/learn/proposals) per vault | 20 |
+| Pending agent invites per vault | 10 |
+| Pending user invites per vault | 50 |
+| Active sessions per agent | 10 |
+| Rules per proposal | 10 |
+| Credential slots per proposal | 10 |
+
+## Database security
+
+Agent Vault uses SQLite with the following hardening:
+
+- **File permissions**: Database file is created with mode `0600` (owner read/write only).
+- **Parameterized queries**: All queries use prepared statements, preventing SQL injection.
+- **WAL mode**: Write-ahead logging for crash resilience.
+- **Foreign key cascades**: Deleting a vault automatically cleans up all associated credentials, proposals, agents, and sessions.
+
+## Sensitive data handling
+
+A summary of how each category of sensitive data is stored:
+
+| Data | Storage format | Readable after storage? |
+| ---- | -------------- | ----------------------- |
+| Credentials | AES-256-GCM ciphertext + nonce | No (write-only, decrypted only at proxy time) |
+| User passwords | Argon2id hash + salt + params | No |
+| Session tokens | SHA-256 hash | No (raw returned once at creation) |
+| Agent service tokens | Argon2id hash + salt + params | No (raw returned once at creation) |
+| Master password | Not stored | N/A (derived key held in memory only) |
+
+Key material is zeroed after use via `WipeBytes()` on a best-effort basis. Sensitive byte slices are never converted to strings (Go strings are immutable and cannot be wiped from memory).
