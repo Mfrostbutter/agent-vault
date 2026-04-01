@@ -4,7 +4,7 @@
 
 <p align="center">
 An open-source credential broker project by <a href="https://infisical.com">Infisical</a> that sits between your agents and the APIs they call.<br>
-No credential exposure, no prompt injection risk — just brokered access out of the box.
+No credential exposure, no prompt injection risk - just brokered access out of the box.
 </p>
 
 <p align="center">
@@ -15,11 +15,11 @@ No credential exposure, no prompt injection risk — just brokered access out of
 
 Traditional secret managers return credentials directly to the caller. This breaks down with AI agents, which are non-deterministic and vulnerable to prompt injection. An attacker can craft a malicious prompt and exfiltrate credentials from the agent.
 
-- **Brokered access, not retrieval** — Agents route requests through a proxy. There is nothing to leak because agents never have credentials.
-- **Self-onboarding** — Paste an invite prompt into any agent's chat and it connects itself. No env setup, no config files. Works with Claude Code, Cursor, and any HTTP-capable agent.
-- **Agent-led access** — The agent discovers what it needs at runtime and raises a proposal. You review and approve in your browser with one click.
-- **Encrypted at rest** — Credentials are encrypted with AES-256-GCM using an Argon2id-derived key. The master password never touches disk.
-- **Multi-user, multi-vault** — Role-based access control with instance-level and vault-level permissions. Invite teammates, scope agents to specific vaults, and audit everything.
+- **Brokered access, not retrieval** - Agents route requests through a proxy. There is nothing to leak because agents never have credentials.
+- **Self-onboarding** - Paste an invite prompt into any agent's chat and it connects itself. No env setup, no config files. Works with Claude Code, Cursor, and any HTTP-capable agent.
+- **Agent-led access** - The agent discovers what it needs at runtime and raises a proposal. You review and approve in your browser with one click.
+- **Encrypted at rest** - Credentials are encrypted with AES-256-GCM using an Argon2id-derived key. The master password never touches disk.
+- **Multi-user, multi-vault** - Role-based access control with instance-level and vault-level permissions. Invite teammates, scope agents to specific vaults, and audit everything.
 
 ## Install
 
@@ -50,25 +50,7 @@ make build
 sudo mv agent-vault /usr/local/bin/
 ```
 
-### Verify a release (optional)
-
-Every release includes SHA-256 checksums and a [cosign](https://github.com/sigstore/cosign) signature for supply-chain security. No keys to manage — verification uses GitHub's OIDC identity.
-
-```bash
-# Download the checksums and signature bundle from the release page, then:
-
-# 1. Verify the binary hasn't been tampered with
-sha256sum --check checksums.txt
-
-# 2. Verify the checksums were signed by the Infisical/agent-vault GitHub Actions workflow
-cosign verify-blob \
-  --bundle checksums.txt.bundle \
-  --certificate-identity-regexp "github.com/Infisical/agent-vault" \
-  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  checksums.txt
-```
-
-## Quick start
+## Quickstart
 
 ```bash
 # Start the server and create your account

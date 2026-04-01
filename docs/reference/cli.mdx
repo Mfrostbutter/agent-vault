@@ -28,11 +28,16 @@ description: "Complete reference for all Agent Vault CLI commands."
     |----------|-------------|
     | `AGENT_VAULT_MASTER_PASSWORD` | Master password for encrypting credentials at rest |
     | `AGENT_VAULT_ADDR` | Externally-reachable base URL (e.g. `https://agent-vault.example.com`). Used for links in emails, invites, and discovery. Falls back to `http://{host}:{port}` if unset. |
+    | `AGENT_VAULT_OAUTH_GOOGLE_CLIENT_ID` | Google OAuth client ID. When both this and the client secret are set, Google OAuth is enabled. |
+    | `AGENT_VAULT_OAUTH_GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
     | `AGENT_VAULT_SMTP_HOST` | SMTP server host. If unset, email notifications are silently disabled. |
     | `AGENT_VAULT_SMTP_PORT` | SMTP server port (default `587`) |
     | `AGENT_VAULT_SMTP_USERNAME` | SMTP username |
     | `AGENT_VAULT_SMTP_PASSWORD` | SMTP password |
     | `AGENT_VAULT_SMTP_FROM` | Sender address for outgoing emails |
+    | `AGENT_VAULT_SMTP_FROM_NAME` | Sender display name (default `Agent Vault`) |
+    | `AGENT_VAULT_SMTP_TLS_MODE` | TLS mode: `opportunistic` (default), `required`, or `none` |
+    | `AGENT_VAULT_SMTP_TLS_SKIP_VERIFY` | Skip TLS certificate verification (default `false`) |
   </Accordion>
 
   <Accordion title="agent-vault server stop">
@@ -70,13 +75,26 @@ description: "Complete reference for all Agent Vault CLI commands."
 
     | Flag | Default | Description |
     |------|---------|-------------|
+    | `--address` | | Server URL |
     | `--email` | | Email address |
     | `--password-stdin` | `false` | Read password from stdin |
   </Accordion>
+</AccordionGroup>
 
-  <Accordion title="agent-vault change-password">
+## Account
+
+<AccordionGroup>
+  <Accordion title="agent-vault account whoami">
     ```bash
-    agent-vault change-password [flags]
+    agent-vault account whoami
+    ```
+
+    Show current user and session info.
+  </Accordion>
+
+  <Accordion title="agent-vault account change-password">
+    ```bash
+    agent-vault account change-password [flags]
     ```
 
     Change your own password. Prompts interactively for current password, new password, and confirmation. Invalidates all existing sessions and issues a new one.
@@ -86,12 +104,12 @@ description: "Complete reference for all Agent Vault CLI commands."
     | `--password-stdin` | `false` | Read current and new passwords as two lines from stdin |
   </Accordion>
 
-  <Accordion title="agent-vault session">
+  <Accordion title="agent-vault account delete">
     ```bash
-    agent-vault session
+    agent-vault account delete
     ```
 
-    Show current session info.
+    Permanently delete your own account. Owners cannot delete themselves — transfer ownership first.
   </Accordion>
 </AccordionGroup>
 
@@ -124,6 +142,30 @@ description: "Complete reference for all Agent Vault CLI commands."
     | Flag | Default | Description |
     |------|---------|-------------|
     | `--yes` | `false` | Skip confirmation prompt |
+  </Accordion>
+
+  <Accordion title="agent-vault vault rename">
+    ```bash
+    agent-vault vault rename <old-name> <new-name>
+    ```
+
+    Rename a vault. Requires vault admin or instance owner role. The default vault cannot be renamed.
+  </Accordion>
+
+  <Accordion title="agent-vault vault use">
+    ```bash
+    agent-vault vault use <name>
+    ```
+
+    Set the active vault for subsequent commands. When set, commands that accept `--vault` will default to this vault instead of `default`.
+  </Accordion>
+
+  <Accordion title="agent-vault vault current">
+    ```bash
+    agent-vault vault current
+    ```
+
+    Show the active vault.
   </Accordion>
 </AccordionGroup>
 
@@ -184,9 +226,9 @@ description: "Complete reference for all Agent Vault CLI commands."
 ## Policies
 
 <AccordionGroup>
-  <Accordion title="agent-vault policy get">
+  <Accordion title="agent-vault vault policy get">
     ```bash
-    agent-vault policy get [flags]
+    agent-vault vault policy get [flags]
     ```
 
     Print the current vault policy as YAML.
@@ -196,9 +238,9 @@ description: "Complete reference for all Agent Vault CLI commands."
     | `--vault` | `default` | Target vault |
   </Accordion>
 
-  <Accordion title="agent-vault policy set">
+  <Accordion title="agent-vault vault policy set">
     ```bash
-    agent-vault policy set [flags]
+    agent-vault vault policy set [flags]
     ```
 
     Set the vault policy. Without `-f`, launches an interactive builder that prompts for rules, headers, and credentials (requires TTY). With `-f`, replaces the policy from a YAML file.
@@ -209,9 +251,9 @@ description: "Complete reference for all Agent Vault CLI commands."
     | `-f` | | Path to a YAML policy file |
   </Accordion>
 
-  <Accordion title="agent-vault policy clear">
+  <Accordion title="agent-vault vault policy clear">
     ```bash
-    agent-vault policy clear [flags]
+    agent-vault vault policy clear [flags]
     ```
 
     Remove the vault policy. Prompts for confirmation unless `--yes` is passed.
@@ -226,24 +268,36 @@ description: "Complete reference for all Agent Vault CLI commands."
 ## Credentials
 
 <AccordionGroup>
-  <Accordion title="agent-vault credentials set">
+  <Accordion title="agent-vault vault credentials list">
     ```bash
-    agent-vault credentials set <KEY=VALUE> [KEY2=VALUE2 ...] [flags]
+    agent-vault vault credentials list [flags]
     ```
 
-    Store one or more credentials using `KEY=VALUE` format. Alias: `agent-vault creds set`.
+    List credential keys in a vault. Alias: `agent-vault vault creds list`.
 
     | Flag | Default | Description |
     |------|---------|-------------|
     | `--vault` | `default` | Target vault |
   </Accordion>
 
-  <Accordion title="agent-vault credentials delete">
+  <Accordion title="agent-vault vault credentials set">
     ```bash
-    agent-vault credentials delete <KEY> [flags]
+    agent-vault vault credentials set <KEY=VALUE> [KEY2=VALUE2 ...] [flags]
     ```
 
-    Delete a credential. Alias: `agent-vault creds delete`.
+    Store one or more credentials using `KEY=VALUE` format. Alias: `agent-vault vault creds set`.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+  </Accordion>
+
+  <Accordion title="agent-vault vault credentials delete">
+    ```bash
+    agent-vault vault credentials delete <KEY> [KEY2 ...] [flags]
+    ```
+
+    Delete one or more credentials. Alias: `agent-vault vault creds delete`.
 
     | Flag | Default | Description |
     |------|---------|-------------|
@@ -254,9 +308,9 @@ description: "Complete reference for all Agent Vault CLI commands."
 ## Proposals
 
 <AccordionGroup>
-  <Accordion title="agent-vault proposal list">
+  <Accordion title="agent-vault vault proposal list">
     ```bash
-    agent-vault proposal list [flags]
+    agent-vault vault proposal list [flags]
     ```
 
     List proposals for a vault.
@@ -267,9 +321,9 @@ description: "Complete reference for all Agent Vault CLI commands."
     | `--status` | | Filter by status (e.g. `pending`) |
   </Accordion>
 
-  <Accordion title="agent-vault proposal show">
+  <Accordion title="agent-vault vault proposal show">
     ```bash
-    agent-vault proposal show <number> [flags]
+    agent-vault vault proposal show <number> [flags]
     ```
 
     Show details of a proposal.
@@ -279,9 +333,9 @@ description: "Complete reference for all Agent Vault CLI commands."
     | `--vault` | `default` | Target vault |
   </Accordion>
 
-  <Accordion title="agent-vault proposal approve">
+  <Accordion title="agent-vault vault proposal approve">
     ```bash
-    agent-vault proposal approve <number> [KEY=VALUE ...] [flags]
+    agent-vault vault proposal approve <number> [KEY=VALUE ...] [flags]
     ```
 
     Approve and apply a proposal. Requires an active login session. Pass credential values as `KEY=VALUE` arguments or the command will prompt for any missing credentials.
@@ -291,9 +345,9 @@ description: "Complete reference for all Agent Vault CLI commands."
     | `--vault` | `default` | Target vault |
   </Accordion>
 
-  <Accordion title="agent-vault proposal reject">
+  <Accordion title="agent-vault vault proposal reject">
     ```bash
-    agent-vault proposal reject <number> [flags]
+    agent-vault vault proposal reject <number> [flags]
     ```
 
     Reject a pending proposal. Requires an active login session.
@@ -304,9 +358,9 @@ description: "Complete reference for all Agent Vault CLI commands."
     | `--reason` | | Rejection reason |
   </Accordion>
 
-  <Accordion title="agent-vault proposal review">
+  <Accordion title="agent-vault vault proposal review">
     ```bash
-    agent-vault proposal review [flags]
+    agent-vault vault proposal review [flags]
     ```
 
     Interactively walk through all pending proposals. For each proposal you can approve, reject, skip, or quit. Requires an active login session.
@@ -333,6 +387,8 @@ description: "Complete reference for all Agent Vault CLI commands."
     | `--ttl` | `15m` | Invite expiration time |
     | `--persistent` | `false` | Create a persistent agent invite |
     | `--name` | | Agent name (persistent invites only) |
+    | `--address` | | Server address override (default: from session) |
+    | `--role` | `consumer` | Vault role for the invited agent: `consumer`, `member`, or `admin` |
   </Accordion>
 
   <Accordion title="agent-vault vault agent invite list">
@@ -423,6 +479,19 @@ description: "Complete reference for all Agent Vault CLI commands."
     |------|---------|-------------|
     | `--vault` | `default` | Target vault |
   </Accordion>
+
+  <Accordion title="agent-vault vault agent set-role">
+    ```bash
+    agent-vault vault agent set-role <name> [flags]
+    ```
+
+    Set an agent's vault role.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--vault` | `default` | Target vault |
+    | `--role` | | Vault role: `consumer`, `member`, or `admin` (required) |
+  </Accordion>
 </AccordionGroup>
 
 ## Owner — users
@@ -493,6 +562,31 @@ description: "Complete reference for all Agent Vault CLI commands."
   </Accordion>
 </AccordionGroup>
 
+## Owner — settings
+
+<AccordionGroup>
+  <Accordion title="agent-vault owner settings get">
+    ```bash
+    agent-vault owner settings get
+    ```
+
+    Show current instance settings including `invite_only` and `allowed_email_domains`. Owner only.
+  </Accordion>
+
+  <Accordion title="agent-vault owner settings set">
+    ```bash
+    agent-vault owner settings set [flags]
+    ```
+
+    Update instance settings. Owner only.
+
+    | Flag | Default | Description |
+    |------|---------|-------------|
+    | `--invite-only` | | Enable or disable invite-only registration (`true` or `false`) |
+    | `--allowed-domains` | | Comma-separated list of allowed email domains (empty to clear) |
+  </Accordion>
+</AccordionGroup>
+
 ## Utilities
 
 <AccordionGroup>
@@ -508,9 +602,9 @@ description: "Complete reference for all Agent Vault CLI commands."
     | `--addr` | | Server address override |
   </Accordion>
 
-  <Accordion title="agent-vault email test">
+  <Accordion title="agent-vault owner email test">
     ```bash
-    agent-vault email test [flags]
+    agent-vault owner email test [flags]
     ```
 
     Send a test email to verify SMTP configuration. Owner only.
@@ -520,9 +614,9 @@ description: "Complete reference for all Agent Vault CLI commands."
     | `--to` | Owner's email | Recipient email address |
   </Accordion>
 
-  <Accordion title="agent-vault reset">
+  <Accordion title="agent-vault owner reset">
     ```bash
-    agent-vault reset [flags]
+    agent-vault owner reset [flags]
     ```
 
     Permanently delete all data and reset the instance to a fresh state. Requires a running server for role verification. Auto-stops the server before wiping data. Owner only.
@@ -530,5 +624,13 @@ description: "Complete reference for all Agent Vault CLI commands."
     | Flag | Default | Description |
     |------|---------|-------------|
     | `--yes` | `false` | Skip confirmation prompt |
+  </Accordion>
+
+  <Accordion title="agent-vault version">
+    ```bash
+    agent-vault version
+    ```
+
+    Print the version and build information.
   </Accordion>
 </AccordionGroup>
