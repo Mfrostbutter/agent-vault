@@ -1,36 +1,15 @@
-# Agent Vault
+<h1 align="center">Agent Vault</h1>
 
-**Secure Credential Access for AI Agents**
+<p align="center"><strong>Secure Credential Access for AI Agents</strong></p>
 
-An open-source credential broker by [Infisical](https://infisical.com) that sits between your agents and the APIs they call.
+<p align="center">
+An open-source credential broker project by <a href="https://infisical.com">Infisical</a> that sits between your agents and the APIs they call.<br>
 No credential exposure, no prompt injection risk — just brokered access out of the box.
+</p>
 
-> **Beta software.** Agent Vault is under active development and may have breaking changes. Use at your own risk. Please review the [security documentation](https://docs.agent-vault.dev/learn/security) before deploying.
-
-[Documentation](https://docs.agent-vault.dev) — [Installation](https://docs.agent-vault.dev/installation) — [CLI Reference](https://docs.agent-vault.dev/reference/cli) — [Slack](https://infisical.com/slack)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Infisical/agent-vault/main/install.sh | sh
-```
-
-### Example: Agent-led access with zero pre-configuration
-
-Give your agent a task that requires an external API. Agent Vault handles the rest.
-
-```
-You:    "Fetch my recent Stripe charges"
-
-Agent:  calls /discover — Stripe isn't configured yet
-        raises a proposal requesting access
-        presents you with an approval link
-
-You:    click the link, paste your API key, click Allow
-
-Agent:  retries through the proxy — request succeeds
-        "Here are your 10 most recent charges..."
-```
-
-The agent never saw your Stripe key. Agent Vault attached it on the wire.
+<p align="center">
+<a href="https://docs.agent-vault.dev">Documentation</a> | <a href="https://docs.agent-vault.dev/installation">Installation</a> | <a href="https://docs.agent-vault.dev/reference/cli">CLI Reference</a> | <a href="https://infisical.com/slack">Slack</a>
+</p>
 
 ## Why Agent Vault
 
@@ -92,17 +71,18 @@ cosign verify-blob \
 ## Quick start
 
 ```bash
+# Start the server and create your account
 agent-vault server -d
-
-# Register (first user becomes owner) and log in
 agent-vault register
 agent-vault login
 
-# Launch your agent through Agent Vault
-agent-vault vault run -- claude
+# Create an agent invite
+agent-vault vault agent invite create
 ```
 
-Ask the agent to call an external API. It discovers available services, proposes access for anything missing, and presents you with a browser link to approve.
+This prints an invite prompt. Paste it into your agent's chat (Claude Code, Cursor, or any HTTP-capable agent) and it connects itself.
+
+Once connected, ask the agent to call any external API. It will discover available services, propose access for anything missing, and give you a browser link to approve.
 
 ## Development
 
@@ -113,3 +93,7 @@ make web-dev    # Vite dev server with hot reload (port 5173)
 make dev        # Go + Vite dev servers with hot reload
 make docker     # Build Docker image
 ```
+
+---
+
+> **Beta software.** Agent Vault is under active development and may have breaking changes. Use at your own risk. Please review the [security documentation](https://docs.agent-vault.dev/learn/security) before deploying.
