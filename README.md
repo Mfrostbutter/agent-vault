@@ -4,7 +4,7 @@
 
 <p align="center">
 An open-source credential broker project by <a href="https://infisical.com">Infisical</a> that sits between your agents and the APIs they call.<br>
-No credential exposure, no prompt injection risk - just brokered access out of the box.
+Eliminate credential exfiltration risk - just brokered access out of the box.
 </p>
 
 <p align="center">
@@ -15,13 +15,15 @@ No credential exposure, no prompt injection risk - just brokered access out of t
 
 Traditional secret managers return credentials directly to the caller. This breaks down with AI agents, which are non-deterministic and vulnerable to prompt injection. An attacker can craft a malicious prompt and exfiltrate credentials from the agent.
 
-- **Brokered access, not retrieval** - Agents route requests through a proxy. There is nothing to leak because agents never have credentials.
-- **Self-onboarding** - Paste an invite prompt into any agent's chat and it connects itself. No env setup, no config files. Works with Claude Code, Cursor, and any HTTP-capable agent.
-- **Agent-led access** - The agent discovers what it needs at runtime and raises a proposal. You review and approve in your browser with one click.
-- **Encrypted at rest** - Credentials are encrypted with AES-256-GCM using an Argon2id-derived key. The master password never touches disk.
-- **Multi-user, multi-vault** - Role-based access control with instance-level and vault-level permissions. Invite teammates, scope agents to specific vaults, and audit everything.
+- **Brokered access, not retrieval** - Agents route requests through a proxy. There is nothing to leak because agents never have credentials. [Learn more](https://docs.agent-vault.dev/learn/security)
+- **Self-onboarding** - Paste an invite prompt into any agent's chat and it connects itself. No env setup, no config files. Works with [Claude Code](https://docs.agent-vault.dev/quickstart/claude-code), [Cursor](https://docs.agent-vault.dev/quickstart/cursor), and any HTTP-capable agent.
+- **Agent-led access** - The agent discovers what it needs at runtime and raises a [proposal](https://docs.agent-vault.dev/learn/proposals). You review and approve in your browser with one click.
+- **Encrypted at rest** - Credentials are encrypted with AES-256-GCM using an Argon2id-derived key. The master password never touches disk. [Learn more](https://docs.agent-vault.dev/learn/credentials)
+- **Multi-user, multi-vault** - Role-based access control with instance-level and vault-level [permissions](https://docs.agent-vault.dev/learn/permissions). Invite teammates, scope agents to specific [vaults](https://docs.agent-vault.dev/learn/vaults), and audit everything.
 
 ## Install
+
+See the [installation guide](https://docs.agent-vault.dev/installation) for full details.
 
 ### Script (macOS / Linux)
 
@@ -33,7 +35,7 @@ curl -fsSL https://raw.githubusercontent.com/Infisical/agent-vault/main/install.
 
 Supports macOS (Intel + Apple Silicon) and Linux (x86_64 + ARM64).
 
-### Docker
+### [Docker](https://docs.agent-vault.dev/self-hosting/docker)
 
 ```bash
 docker run -it -p 14321:14321 -v agent-vault-data:/data infisical/agent-vault
@@ -62,9 +64,9 @@ agent-vault login
 agent-vault vault agent invite create
 ```
 
-This prints an invite prompt. Paste it into your agent's chat (Claude Code, Cursor, or any HTTP-capable agent) and it connects itself.
+This prints an invite prompt. Paste it into your agent's chat ([Claude Code](https://docs.agent-vault.dev/quickstart/claude-code), [Cursor](https://docs.agent-vault.dev/quickstart/cursor), or any HTTP-capable agent) and it connects itself.
 
-Once connected, ask the agent to call any external API. It will discover available services, propose access for anything missing, and give you a browser link to approve.
+Once connected, ask the agent to call any external API. It will discover available services, [propose access](https://docs.agent-vault.dev/first-proposal) for anything missing, and give you a browser link to approve.
 
 ## Development
 
