@@ -7,15 +7,9 @@ Agent Vault is an agent-first, open source proxy and secrets management vault by
 
 Agents like [Claude Code](https://code.claude.com/docs/en/overview) or [OpenClaw](https://openclaw.ai) route HTTP requests through an Agent Vault server, which reconstructs each request with the right set of authentication credentials, before forwarding it to the target service.
 
-<Mermaid
-  chart={`
-    flowchart LR
-      A[Agent] -->|HTTP request + session token| B[Agent Vault]
-      B -->|Reconstructed request + real credentials| C[Target API]
-      C -->|Response| B
-      B -->|Response| A
-  `}
-/>
+<Frame>
+  <img src="/images/architecture.png" alt="Agent Vault architecture diagram" />
+</Frame>
 
 ## Why Agent Vault
 
@@ -41,5 +35,31 @@ The agent never sees or handles your secrets. Learn more about [vaults](/learn/v
   </Card>
   <Card title="Your first proposal" icon="sparkles" href="/first-proposal">
     See Agent Vault in action in under 2 minutes.
+  </Card>
+</CardGroup>
+
+## Quickstart
+
+<CardGroup cols={3}>
+  <Card title="Claude Code" icon="terminal" href="/quickstart/claude-code">
+    Connect Claude Code to Agent Vault.
+  </Card>
+  <Card title="Cursor" icon="arrow-pointer" href="/quickstart/cursor">
+    Connect Cursor to Agent Vault.
+  </Card>
+  <Card title="Codex" icon="code" href="/quickstart/codex">
+    Connect Codex to Agent Vault.
+  </Card>
+  <Card title="OpenClaw" icon="robot" href="/quickstart/openclaw">
+    Connect OpenClaw to Agent Vault.
+  </Card>
+  <Card title="NanoClaw" icon="microchip" href="/quickstart/nanoclaw">
+    Connect NanoClaw to Agent Vault.
+  </Card>
+  <Card title="Hermes Agent" icon="bolt" href="/quickstart/hermes-agent">
+    Connect Hermes Agent to Agent Vault.
+  </Card>
+  <Card title="Custom Agent" icon="plug" href="/quickstart/custom-agent">
+    Connect any HTTP-capable agent.
   </Card>
 </CardGroup>
