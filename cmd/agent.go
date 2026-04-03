@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
@@ -24,9 +25,9 @@ var agentListCmd = &cobra.Command{
 		}
 
 		vault := resolveVault(cmd)
-		url := sess.Address + "/v1/admin/agents?vault=" + vault
+		reqURL := sess.Address + "/v1/admin/agents?vault=" + url.QueryEscape(vault)
 
-		respBody, err := doAdminRequestWithBody("GET", url, sess.Token, nil)
+		respBody, err := doAdminRequestWithBody("GET", reqURL, sess.Token, nil)
 		if err != nil {
 			return err
 		}
@@ -71,8 +72,8 @@ var agentInfoCmd = &cobra.Command{
 			return err
 		}
 
-		url := sess.Address + "/v1/admin/agents/" + name
-		respBody, err := doAdminRequestWithBody("GET", url, sess.Token, nil)
+		reqURL := sess.Address + "/v1/admin/agents/" + url.PathEscape(name)
+		respBody, err := doAdminRequestWithBody("GET", reqURL, sess.Token, nil)
 		if err != nil {
 			return err
 		}
@@ -118,8 +119,8 @@ var agentRevokeCmd = &cobra.Command{
 			return err
 		}
 
-		url := sess.Address + "/v1/admin/agents/" + name
-		if err := doAdminRequest("DELETE", url, sess.Token, nil); err != nil {
+		reqURL := sess.Address + "/v1/admin/agents/" + url.PathEscape(name)
+		if err := doAdminRequest("DELETE", reqURL, sess.Token, nil); err != nil {
 			return err
 		}
 
@@ -139,8 +140,8 @@ var agentRotateCmd = &cobra.Command{
 			return err
 		}
 
-		url := sess.Address + "/v1/admin/agents/" + name + "/rotate"
-		respBody, err := doAdminRequestWithBody("POST", url, sess.Token, []byte("{}"))
+		reqURL := sess.Address + "/v1/admin/agents/" + url.PathEscape(name) + "/rotate"
+		respBody, err := doAdminRequestWithBody("POST", reqURL, sess.Token, []byte("{}"))
 		if err != nil {
 			return err
 		}
@@ -183,8 +184,8 @@ var agentRenameCmd = &cobra.Command{
 			return err
 		}
 
-		url := sess.Address + "/v1/admin/agents/" + name + "/rename"
-		if err := doAdminRequest("POST", url, sess.Token, body); err != nil {
+		reqURL := sess.Address + "/v1/admin/agents/" + url.PathEscape(name) + "/rename"
+		if err := doAdminRequest("POST", reqURL, sess.Token, body); err != nil {
 			return err
 		}
 
@@ -217,8 +218,8 @@ var agentSetRoleCmd = &cobra.Command{
 			return err
 		}
 
-		url := sess.Address + "/v1/admin/agents/" + name + "/vault-role"
-		if err := doAdminRequest("POST", url, sess.Token, body); err != nil {
+		reqURL := sess.Address + "/v1/admin/agents/" + url.PathEscape(name) + "/vault-role"
+		if err := doAdminRequest("POST", reqURL, sess.Token, body); err != nil {
 			return err
 		}
 

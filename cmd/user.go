@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	neturl "net/url"
 	"strings"
 
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -73,7 +74,7 @@ var userInfoCmd = &cobra.Command{
 
 		email := args[0]
 
-		url := sess.Address + "/v1/admin/users/" + email
+		url := sess.Address + "/v1/admin/users/" + neturl.PathEscape(email)
 		respBody, err := doAdminRequestWithBody("GET", url, sess.Token, nil)
 		if err != nil {
 			return err
@@ -113,7 +114,7 @@ var userRemoveCmd = &cobra.Command{
 			return err
 		}
 
-		url := fmt.Sprintf("%s/v1/admin/users/%s", sess.Address, email)
+		url := fmt.Sprintf("%s/v1/admin/users/%s", sess.Address, neturl.PathEscape(email))
 		if err := doAdminRequest("DELETE", url, sess.Token, nil); err != nil {
 			return err
 		}
@@ -144,7 +145,7 @@ var userSetRoleCmd = &cobra.Command{
 			return err
 		}
 
-		url := fmt.Sprintf("%s/v1/admin/users/%s/role", sess.Address, email)
+		url := fmt.Sprintf("%s/v1/admin/users/%s/role", sess.Address, neturl.PathEscape(email))
 		return doAdminRequest("POST", url, sess.Token, body)
 	},
 }
