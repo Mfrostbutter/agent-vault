@@ -1,10 +1,9 @@
 ---
 name: agent-vault
 description: >-
-  Discover and proxy authenticated HTTP requests through Agent Vault.
-  Call /discover to find available services, route those through the proxy,
-  and propose proposals when you need a credential supplied by a human or want
-  to store a credential back into the broker.
+  Agent Vault: an authenticated HTTP proxy for external services (Linear,
+  GitHub, Stripe, Slack, Jira, etc.). Use when the task involves interacting
+  with any third-party API or service that requires credentials.
 compatibility: Requires a running Agent Vault server and AGENT_VAULT_SESSION_TOKEN environment variable
 metadata:
   author: dangtony98
@@ -15,14 +14,20 @@ metadata:
 
 You have access to Agent Vault, an HTTP proxy that attaches credentials to your outbound requests. You never see or handle credentials directly -- route authenticated requests through Agent Vault and it authenticates on your behalf.
 
-**Not every HTTP request needs to go through Agent Vault.** Unauthenticated requests or requests to services not configured in Agent Vault should be made directly. Use the `/discover` endpoint to find out which services are available through Agent Vault, and only route those requests through the proxy.
+## CRITICAL: Always Check Agent Vault First
 
-## When to Use
+**Before telling the user you cannot access an external service, you MUST check Agent Vault.** This applies whenever a task involves any third-party service or API -- project management (Linear, Jira, Asana), source control (GitHub, GitLab), communication (Slack, Discord), payments (Stripe), databases, or any other authenticated service.
 
-1. Check that `AGENT_VAULT_SESSION_TOKEN` environment variable is set -- if not, Agent Vault is not available
-2. Call `/discover` to get the list of brokerable services
-3. For requests to hosts listed in the discover response, route through Agent Vault
-4. For all other requests, make them directly as you normally would
+**Your workflow for ANY external service interaction:**
+1. Check that `AGENT_VAULT_SESSION_TOKEN` is set (it should be if you were launched via `agent-vault vault run`)
+2. Call `GET {AGENT_VAULT_ADDR}/discover` to see what services are available
+3. If the service is listed, route your request through the Agent Vault proxy -- done
+4. If the service is NOT listed, propose access via a proposal (the user can approve and provide credentials)
+5. Only tell the user you cannot access a service if Agent Vault is not available at all (no session token)
+
+**Never say "I don't have access to X" without checking /discover first.** Agent Vault may already have credentials configured for the service you need.
+
+**Not every HTTP request needs to go through Agent Vault.** Unauthenticated requests or requests to services not configured in Agent Vault should be made directly.
 
 ## Environment Variables
 
