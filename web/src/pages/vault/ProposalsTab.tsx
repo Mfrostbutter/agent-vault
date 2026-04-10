@@ -395,7 +395,7 @@ function deriveProposalTitle(cs: Proposal): {
 } {
   let services: { action: string; host: string; description?: string }[] = [];
   try {
-    if (cs.services_json) services = JSON.parse(cs.services_json);
+    if (cs.services_json) services = JSON.parse(cs.services_json) || [];
   } catch {
     // ignore
   }
