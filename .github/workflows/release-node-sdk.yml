@@ -5,7 +5,7 @@ run-name: Release Agent Vault Node SDK
 on:
     push:
         tags:
-            - "*.*.*" # version, e.g. 1.0.0
+            - "node-sdk/v*.*.*" # version, e.g. 1.0.0
 
 permissions:
   contents: write
@@ -35,7 +35,9 @@ jobs:
               run: npm install
 
             - name: Set NPM version
-              run: npm version ${{ github.ref_name }} --allow-same-version --no-git-tag-version
+              run: npm version ${GITHUB_REF_NAME#node-sdk/v} --allow-same-version --no-git-tag-version
 
             - name: Publish NPM
-              run: npm publish --tarball=./infisical-agent-vault-sdk-${{github.ref_name}} --access public
+              run: npm publish --access public --provenance
+              env:
+                NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
