@@ -45,7 +45,7 @@ make docker       # Multi-stage Docker image; data persisted at /data/.agent-vau
 ## Conventions
 
 - When the agent-facing surface changes (endpoints, request/response fields, auth behavior), update **both** [cmd/skill_cli.md](cmd/skill_cli.md) and [cmd/skill_http.md](cmd/skill_http.md) together — they are versioned as a pair.
-- When adding an environment variable, update [.env.example](.env.example) **and** the server-config table in [docs/self-hosting/environment-variables.mdx](docs/self-hosting/environment-variables.mdx).
+- When adding or consuming an environment variable (even platform-injected ones like `PORT` or `FLY_APP_NAME`), update [.env.example](.env.example), [docs/self-hosting/environment-variables.mdx](docs/self-hosting/environment-variables.mdx), **and** the env-var table in [docs/reference/cli.mdx](docs/reference/cli.mdx). If it changes fallback behavior of an existing variable, update that variable's description too.
 - When adding or changing a CLI flag, update the flag table in [docs/reference/cli.mdx](docs/reference/cli.mdx) for the affected command.
 - When a change affects operator-facing behavior, update [README.md](README.md).
 - Whenever a new feature lands, scan [docs/](docs/) for pages that need a matching update — quickstart, guides, self-hosting, learn, and reference all mirror runtime behavior and drift fast.
