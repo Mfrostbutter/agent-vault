@@ -10,15 +10,27 @@ import Modal from "../../components/Modal";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
 import FormField from "../../components/FormField";
+import Select from "../../components/Select";
 import Toggle from "../../components/Toggle";
 import { type Auth, AUTH_TYPE_LABELS } from "../../components/ProposalPreview";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, apiRequest } from "../../lib/api";
 
 interface Service {
   host: string;
   description?: string;
   enabled?: boolean;
   auth: Auth;
+}
+
+interface CatalogTemplate {
+  id: string;
+  name: string;
+  host: string;
+  description: string;
+  auth_type: string;
+  suggested_credential_key: string;
+  header?: string;
+  prefix?: string;
 }
 
 function isEnabled(service: Service): boolean {
@@ -38,6 +50,7 @@ export default function ServicesTab() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [catalog, setCatalog] = useState<CatalogTemplate[]>([]);
 
   // Add/Edit modal state: null = closed, -1 = add, 0+ = edit index
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -49,7 +62,19 @@ export default function ServicesTab() {
 
   useEffect(() => {
     fetchServices();
+    fetchCatalog();
   }, []);
+
+  async function fetchCatalog() {
+    try {
+      const data = await apiRequest<{ services: CatalogTemplate[] }>("/v1/service-catalog");
+      const entries = data.services ?? [];
+      entries.sort((a, b) => a.name.localeCompare(b.name));
+      setCatalog(entries);
+    } catch {
+      // Catalog is optional — degrade silently to manual entry.
+    }
+  }
 
   async function fetchServices() {
     try {
@@ -263,6 +288,7 @@ export default function ServicesTab() {
         <ServiceModal
           title={editingIndex === -1 ? "Add Service" : "Edit Service"}
           initial={editingIndex >= 0 ? services[editingIndex] : undefined}
+          catalog={catalog}
           onClose={() => setEditingIndex(null)}
           onSave={async (service) => {
             const updated = [...services];
@@ -285,11 +311,13 @@ export default function ServicesTab() {
 function ServiceModal({
   title,
   initial,
+  catalog,
   onClose,
   onSave,
 }: {
   title: string;
   initial?: Service;
+  catalog: CatalogTemplate[];
   onClose: () => void;
   onSave: (service: Service) => Promise<void>;
 }) {
@@ -317,6 +345,45 @@ function ServiceModal({
     }
     return [{ name: "", value: "" }];
   });
+
+  // Snapshot the catalog at open time so a fetch resolving mid-form doesn't
+  // shift the preset picker into view above fields the user is already editing.
+  const [catalogSnapshot] = useState<CatalogTemplate[]>(() => catalog);
+  const [selectedPreset, setSelectedPreset] = useState("");
+  const showPresets = !initial && catalogSnapshot.length > 0;
+
+  function resetFields() {
+    setHost("");
+    setDescription("");
+    setAuthType("bearer");
+    setToken("");
+    setUsername("");
+    setPassword("");
+    setApiKey("");
+    setApiKeyHeader("");
+    setApiKeyPrefix("");
+    setCustomHeaders([{ name: "", value: "" }]);
+  }
+
+  function applyPreset(id: string) {
+    setSelectedPreset(id);
+    resetFields();
+    if (!id) return;
+    const tpl = catalogSnapshot.find((t) => t.id === id);
+    if (!tpl) return;
+    setHost(tpl.host);
+    setDescription(tpl.description);
+    setAuthType(tpl.auth_type);
+    if (tpl.auth_type === "bearer") setToken(tpl.suggested_credential_key);
+    // Catalogued basic-auth services (Twilio, Jira) carry a token that belongs
+    // in the password slot — the username (AccountSID, email) is user-specific.
+    if (tpl.auth_type === "basic") setPassword(tpl.suggested_credential_key);
+    if (tpl.auth_type === "api-key") {
+      setApiKey(tpl.suggested_credential_key);
+      setApiKeyHeader(tpl.header ?? "");
+      setApiKeyPrefix(tpl.prefix ?? "");
+    }
+  }
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -409,6 +476,24 @@ function ServiceModal({
       }
     >
       <div className="space-y-4">
+        {showPresets && (
+          <FormField
+            label="Start from preset"
+            helperText="Pick a catalogued service to pre-fill the form, or leave as Custom to configure manually."
+          >
+            <Select
+              value={selectedPreset}
+              onChange={(e) => applyPreset(e.target.value)}
+            >
+              <option value="">Custom (blank)</option>
+              {catalogSnapshot.map((tpl) => (
+                <option key={tpl.id} value={tpl.id}>
+                  {tpl.name} — {tpl.host}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+        )}
         <FormField label="Host Pattern">
           <Input
             placeholder="e.g. api.stripe.com"
