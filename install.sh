@@ -2,10 +2,14 @@
 set -e
 
 # Agent Vault installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/Infisical/agent-vault/main/install.sh | sh
+# Usage: curl -fsSL https://get.agent-vault.dev | sh
 #
 # Supports: macOS (Intel + Apple Silicon), Linux (amd64 + arm64)
 # Works for both fresh install and upgrade.
+#
+# Privacy: on successful install, sends an anonymous ping with OS, arch,
+# and version only — no identifiers, no IP retention. Opt out with:
+#   curl -fsSL https://get.agent-vault.dev | AGENT_VAULT_NO_TELEMETRY=1 sh
 
 REPO="Infisical/agent-vault"
 INSTALL_DIR="/usr/local/bin"
@@ -156,7 +160,7 @@ main() {
     INSTALLED_VERSION="$(agent-vault version 2>/dev/null || echo "")"
     if [ -z "$INSTALLED_VERSION" ]; then
         warn "Could not verify installed binary."
-        if [ -n "$EXISTING_VERSION" ]; then
+        if [ -n "$BACKUP_FILE" ]; then
             warn "A database backup was saved at: ${BACKUP_FILE}"
         fi
         error "Installation may have failed. Check that ${INSTALL_DIR} is in your PATH."
@@ -167,7 +171,9 @@ main() {
 
     if [ -n "$EXISTING_VERSION" ] && [ "$EXISTING_VERSION" != "unknown" ]; then
         info "Upgraded from ${EXISTING_VERSION}"
-        info "Database backup: ${BACKUP_FILE}"
+        if [ -n "$BACKUP_FILE" ]; then
+            info "Database backup: ${BACKUP_FILE}"
+        fi
     fi
 
     if [ "$SERVER_WAS_RUNNING" = true ]; then
@@ -175,6 +181,16 @@ main() {
         info "The server was stopped for the upgrade."
         info "Run 'agent-vault server' to start it again."
         info "Database migrations (if any) will run automatically on startup."
+    fi
+
+    # Anonymous completion beacon. No PII, no identifiers.
+    # Opt out: AGENT_VAULT_NO_TELEMETRY=1
+    if [ -z "$AGENT_VAULT_NO_TELEMETRY" ]; then
+        EVENT="install"
+        if [ -n "$EXISTING_VERSION" ] && [ "$EXISTING_VERSION" != "unknown" ]; then
+            EVENT="upgrade"
+        fi
+        curl -fsS -m 3 "https://get.agent-vault.dev/ok?os=${OS}&arch=${ARCH}&v=${LATEST}&event=${EVENT}" >/dev/null 2>&1 || true
     fi
 }
 
