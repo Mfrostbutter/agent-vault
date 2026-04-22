@@ -15,6 +15,10 @@ Agents should not possess credentials. Agent Vault eliminates credential exfiltr
 
 ## Why Agent Vault
 
+<p align="center">
+  <img src="assets/agent-vault.gif" alt="Agent Vault demo" />
+</p>
+
 Secret managers return credentials directly to the caller. This breaks down with AI agents, which are non-deterministic systems vulnerable to prompt injection that can be tricked into exfiltrating secrets.
 
 Agent Vault takes a different approach: **Agent Vault never reveals vault-stored credentials to agents**. Instead, agents route HTTP requests through a local proxy that injects the right credentials at the network layer.
@@ -23,10 +27,6 @@ Agent Vault takes a different approach: **Agent Vault never reveals vault-stored
 - **Works with any agent** - Custom Python/TypeScript agents, sandboxed processes, and coding agents like Claude Code, Cursor, and Codex. Anything that speaks HTTP. [Learn more](https://docs.agent-vault.dev/quickstart)
 - **Encrypted at rest** - Credentials are encrypted with AES-256-GCM using a random data encryption key (DEK). An optional master password wraps the DEK via Argon2id, so rotating the password does not re-encrypt credentials. A passwordless mode is available for PaaS deploys. [Learn more](https://docs.agent-vault.dev/learn/credentials)
 - **Request logs** - Every proxied request is persisted per vault with method, host, path, status, latency, and the credential key names involved. Bodies, headers, and query strings are not recorded. Retention is configurable per vault.
-
-<p align="center">
-  <img src="assets/agent-vault.gif" alt="Agent Vault demo" />
-</p>
 
 ## Installation
 
