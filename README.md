@@ -131,9 +131,17 @@ make dev        # Go + Vite dev servers with hot reload
 make docker     # Build Docker image
 ```
 
+## Open-source vs. paid
+
+This repo available under the [MIT expat license](https://github.com/Infisical/infisical/blob/main/LICENSE), with the exception of the `ee` directory which will contain premium enterprise features requiring a Infisical license.
+
+If you are interested in Infisical or exploring a more commercial path for Agent Vault, take a look at [our website](https://infisical.com/) or [book a meeting with us](https://infisical.cal.com/vlad/infisical-demo).
+
 ## Contributing
 
-Whether it's big or small, we love contributions. Check out our guide to see how to [get started](https://infisical.com/docs/contributing/getting-started).
+Whether it's big or small, we love contributions. Agent Vault follows the same contribution guidelines as Infisical.
+
+Check out our guide to see how to [get started](https://infisical.com/docs/contributing/getting-started).
 
 Not sure where to get started? You can:
 
@@ -144,12 +152,6 @@ Not sure where to get started? You can:
 If you're reading this, there is a strong chance you like the products we created.
 
 You might also make a great addition to our team. We're growing fast and would love for you to [join us](https://infisical.com/careers).
-
-## Open-source vs. paid
-
-This repo available under the [MIT expat license](https://github.com/Infisical/infisical/blob/main/LICENSE), with the exception of the `ee` directory which will contain premium enterprise features requiring a Infisical license.
-
-If you are interested in managed Infisical Cloud or self-hosted Enterprise Offering, take a look at [our website](https://infisical.com/) or [book a meeting with us](https://infisical.cal.com/vlad/infisical-demo).
 
 ---
 
